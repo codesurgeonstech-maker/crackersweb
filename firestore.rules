@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isDeveloper() {
+      return isAuthenticated() && (
+        (request.auth.token.role == 'developer') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().role == 'developer')
+      );
+    }
+
+    function isShopOwner(shopId) {
+      return isAuthenticated() && (
+        isDeveloper() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().role == 'owner' &&
+         getUserData().shopId == shopId) ||
+        (exists(/databases/$(database)/documents/shops/$(shopId)) &&
+         get(/databases/$(database)/documents/shops/$(shopId)).data.ownerUid == request.auth.uid)
+      );
+    }
+
+    function isShopActive(shopId) {
+      return exists(/databases/$(database)/documents/shops/$(shopId)) &&
+             get(/databases/$(database)/documents/shops/$(shopId)).data.isActive == true;
+    }
+
+    // User profiles collection
+    match /users/{userId} {
+      // Users can read their own profile; developers can read all
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isDeveloper());
+      
+      // Developer can create/update any user. User can update their own profile,
+      // but CANNOT change role or shopId.
+      allow create: if isDeveloper() || (isAuthenticated() && request.auth.uid == userId && !('role' in request.resource.data));
+      allow update: if isDeveloper() || (
+        isAuthenticated() && request.auth.uid == userId &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.shopId == resource.data.shopId
+      );
+      allow delete: if isDeveloper();
+    }
+
+    // Shops collection
+    match /shops/{shopId} {
+      // Public can read if active; shop owner or developer can always read
+      allow read: if resource.data.isActive == true || isShopOwner(shopId) || isDeveloper();
+      
+      // Only developers can create or delete shops
+      allow create, delete: if isDeveloper();
+      
+      // Developer or shop owner can update
+      // Shop owner cannot change ownerUid, slug, or isActive status
+      allow update: if isDeveloper() || (
+        isShopOwner(shopId) &&
+        request.resource.data.ownerUid == resource.data.ownerUid &&
+        request.resource.data.slug == resource.data.slug &&
+        request.resource.data.isActive == resource.data.isActive
+      );
+
+      // Shop categories subcollection
+      match /categories/{categoryId} {
+        allow read: if isShopActive(shopId) || isShopOwner(shopId) || isDeveloper();
+        allow write: if isShopOwner(shopId) || isDeveloper();
+      }
+
+      // Shop products subcollection
+      match /products/{productId} {
+        allow read: if isShopActive(shopId) || isShopOwner(shopId) || isDeveloper();
+        allow write: if isShopOwner(shopId) || isDeveloper();
+      }
+
+      // Shop orders subcollection
+      match /orders/{orderId} {
+        // Customer can create an order with valid initial fields & pending status
+        allow create: if request.resource.data.customerName is string &&
+                         request.resource.data.customerMobile is string &&
+                         request.resource.data.status == 'pending' &&
+                         request.resource.data.shopId == shopId;
+        
+        // Orders can only be read by shop owner or developer
+        allow read: if isShopOwner(shopId) || isDeveloper();
+        
+        // Only shop owner or developer can update (e.g., mark as confirmed/completed)
+        allow update, delete: if isShopOwner(shopId) || isDeveloper();
+      }
+    }
+  }
+}

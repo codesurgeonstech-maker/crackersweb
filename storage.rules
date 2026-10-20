@@ -1,0 +1,33 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isDeveloper() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'developer' ||
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'developer'
+      );
+    }
+
+    function isShopOwner(shopId) {
+      return isAuthenticated() && (
+        isDeveloper() ||
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.shopId == shopId ||
+        firestore.get(/databases/(default)/documents/shops/$(shopId)).data.ownerUid == request.auth.uid
+      );
+    }
+
+    // Public assets can be read by anyone (images of products and logos)
+    match /shops/{shopId}/{allPaths=**} {
+      allow read: if true;
+      // Write allowed only if user is the assigned shop owner or developer
+      allow write: if isShopOwner(shopId) &&
+                   request.resource.size < 5 * 1024 * 1024 && // max 5MB
+                   request.resource.contentType.matches('image/.*');
+    }
+  }
+}

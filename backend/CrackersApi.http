@@ -1,0 +1,6 @@
+@CrackersApi_HostAddress = http://localhost:5250
+
+GET {{CrackersApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
