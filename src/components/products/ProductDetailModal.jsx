@@ -44,6 +44,10 @@ export default function ProductDetailModal({
           <img
             src={product.imageUrl || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=500&auto=format&fit=crop&q=80'}
             alt={product.name}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=500&auto=format&fit=crop&q=80';
+            }}
             className="w-full h-full object-cover"
           />
           {discountPercent > 0 && (

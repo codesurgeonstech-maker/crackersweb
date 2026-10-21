@@ -112,3 +112,21 @@ export async function deleteCategory(shopId, categoryId) {
   saveLocalCategories(shopId, updated);
   return true;
 }
+
+/**
+ * Bulk import categories from array
+ */
+export async function bulkImportCategories(shopId, categoriesArray) {
+  const imported = [];
+  for (const item of categoriesArray) {
+    if (item.name && item.name.trim()) {
+      const added = await addCategory(shopId, {
+        name: item.name.trim(),
+        displayOrder: Number(item.displayOrder) || (imported.length + 1)
+      });
+      imported.push(added);
+    }
+  }
+  return imported;
+}
+
