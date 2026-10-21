@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { useAuth } from '../../hooks/useAuth';
 import { getShopOrders, updateOrderStatus } from '../../services/orderService';
@@ -18,8 +18,52 @@ import {
   XCircle,
   Phone,
   MapPin,
-  FileText
+  FileText,
+  Search,
+  X,
+  Filter,
+  Calendar,
+  ArrowUpDown,
+  RotateCcw,
+  Truck,
+  Store
 } from 'lucide-react';
+
+function isOrderInDateRange(orderCreatedAt, range) {
+  if (range === 'all') return true;
+  if (!orderCreatedAt) return false;
+
+  let orderDate;
+  if (typeof orderCreatedAt.toDate === 'function') {
+    orderDate = orderCreatedAt.toDate();
+  } else if (orderCreatedAt instanceof Date) {
+    orderDate = orderCreatedAt;
+  } else {
+    orderDate = new Date(orderCreatedAt);
+  }
+
+  if (isNaN(orderDate.getTime())) return false;
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  if (range === 'today') {
+    return orderDate >= startOfToday;
+  }
+  if (range === 'yesterday') {
+    return orderDate >= startOfYesterday && orderDate < startOfToday;
+  }
+  if (range === 'week') {
+    return orderDate >= startOfWeek;
+  }
+  if (range === 'month') {
+    return orderDate >= startOfMonth;
+  }
+  return true;
+}
 
 export default function AdminOrders() {
   const { userProfile, shopId } = useAuth();
@@ -28,16 +72,22 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [shop, setShop] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [orderTypeFilter, setOrderTypeFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [sortFilter, setSortFilter] = useState('newest');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { showToast } = useToast();
 
-  const loadOrders = async () => {
+  const loadOrders = async (isManualRefresh = false) => {
     if (!currentShopId) {
       setLoading(false);
       return;
     }
+    if (isManualRefresh) setRefreshing(true);
     try {
       const [ords, shopData] = await Promise.all([
         getShopOrders(currentShopId),
@@ -45,10 +95,14 @@ export default function AdminOrders() {
       ]);
       setOrders(ords);
       setShop(shopData);
+      if (isManualRefresh) {
+        showToast('Orders refreshed successfully', 'success');
+      }
     } catch {
       showToast('Error loading orders', 'error');
     } finally {
       setLoading(false);
+      if (isManualRefresh) setRefreshing(false);
     }
   };
 
@@ -69,10 +123,89 @@ export default function AdminOrders() {
     }
   };
 
-  const filteredOrders = orders.filter(o => {
-    if (statusFilter === 'all') return true;
-    return o.status === statusFilter;
-  });
+  const handleResetFilters = () => {
+    setStatusFilter('all');
+    setOrderTypeFilter('all');
+    setDateFilter('all');
+    setSortFilter('newest');
+    setSearchQuery('');
+  };
+
+  const hasActiveFilters =
+    statusFilter !== 'all' ||
+    orderTypeFilter !== 'all' ||
+    dateFilter !== 'all' ||
+    sortFilter !== 'newest' ||
+    Boolean(searchQuery.trim());
+
+  const filteredOrders = useMemo(() => {
+    return orders
+      .filter((order) => {
+        // Status filter
+        if (statusFilter !== 'all' && order.status !== statusFilter) {
+          return false;
+        }
+
+        // Order Type filter
+        if (orderTypeFilter !== 'all') {
+          const type = (order.orderType || 'Shop Pickup').toLowerCase();
+          if (type !== orderTypeFilter.toLowerCase()) {
+            return false;
+          }
+        }
+
+        // Date filter
+        if (!isOrderInDateRange(order.createdAt, dateFilter)) {
+          return false;
+        }
+
+        // Mobile Number / Search Query filter
+        if (searchQuery.trim()) {
+          const rawQuery = searchQuery.trim().toLowerCase();
+          const queryDigits = searchQuery.replace(/\D/g, '');
+          const customerMobile = order.customerMobile ? String(order.customerMobile) : '';
+          const mobileDigits = customerMobile.replace(/\D/g, '');
+
+          // Check if digits match mobile number
+          const matchesMobile = queryDigits
+            ? mobileDigits.includes(queryDigits)
+            : customerMobile.toLowerCase().includes(rawQuery);
+
+          // Also match customer name, order reference, or address
+          const matchesName = order.customerName && order.customerName.toLowerCase().includes(rawQuery);
+          const matchesRef = order.orderReference && order.orderReference.toLowerCase().includes(rawQuery);
+          const matchesAddress = order.address && order.address.toLowerCase().includes(rawQuery);
+
+          if (!matchesMobile && !matchesName && !matchesRef && !matchesAddress) {
+            return false;
+          }
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        const getDate = (item) => {
+          if (!item.createdAt) return 0;
+          if (typeof item.createdAt.toDate === 'function') return item.createdAt.toDate().getTime();
+          if (item.createdAt instanceof Date) return item.createdAt.getTime();
+          return new Date(item.createdAt).getTime() || 0;
+        };
+
+        if (sortFilter === 'newest') {
+          return getDate(b) - getDate(a);
+        }
+        if (sortFilter === 'oldest') {
+          return getDate(a) - getDate(b);
+        }
+        if (sortFilter === 'amount_high') {
+          return (Number(b.total) || 0) - (Number(a.total) || 0);
+        }
+        if (sortFilter === 'amount_low') {
+          return (Number(a.total) || 0) - (Number(b.total) || 0);
+        }
+        return 0;
+      });
+  }, [orders, statusFilter, orderTypeFilter, dateFilter, searchQuery, sortFilter]);
 
   const getStatusBadgeVariant = (st) => {
     switch (st) {
@@ -86,46 +219,171 @@ export default function AdminOrders() {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-surface-text tracking-tight">
-              Orders & Enquiries
-            </h1>
-            <p className="text-xs sm:text-sm text-gray-500">
-              Review incoming WhatsApp orders, confirm item availability and manage fulfillment.
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-extrabold text-surface-text tracking-tight">
+                Orders & Enquiries
+              </h1>
+              <span className="bg-primary-50 text-primary-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-primary-200">
+                {orders.length} Total
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+              Review WhatsApp orders, search customer mobile numbers, and manage fulfillment.
             </p>
           </div>
+
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={RotateCcw}
+            isLoading={refreshing}
+            onClick={() => loadOrders(true)}
+            className="self-start sm:self-auto text-xs"
+          >
+            Refresh Orders
+          </Button>
         </div>
 
-        {/* Status Filters Bar */}
-        <div className="bg-white p-3 rounded-2xl border border-surface-border shadow-subtle flex flex-wrap gap-2 items-center">
-          {[
-            { id: 'all', label: 'All Orders', count: orders.length },
-            { id: 'pending', label: 'Pending Confirmation', count: orders.filter(o => o.status === 'pending').length },
-            { id: 'confirmed', label: 'Confirmed', count: orders.filter(o => o.status === 'confirmed').length },
-            { id: 'completed', label: 'Completed', count: orders.filter(o => o.status === 'completed').length },
-            { id: 'cancelled', label: 'Cancelled', count: orders.filter(o => o.status === 'cancelled').length },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setStatusFilter(tab.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                statusFilter === tab.id
-                  ? 'bg-primary-500 text-white shadow-xs'
-                  : 'bg-surface-secondary text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {tab.label} ({tab.count})
-            </button>
-          ))}
+        {/* Search Bar & Filters Card */}
+        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-surface-border shadow-subtle space-y-4">
+          {/* Mobile Number & General Search Bar */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-primary-500">
+              <Phone className="w-4 h-4" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by Customer Mobile Number (e.g. 98765...), name, or order ID..."
+              className="w-full pl-10 pr-10 py-2.5 bg-surface-secondary/60 hover:bg-surface-secondary focus:bg-white rounded-2xl border border-surface-border text-xs sm:text-sm text-surface-text focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all placeholder:text-gray-400 font-medium"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                title="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Filter Tabs */}
+          <div className="flex flex-wrap gap-2 items-center pt-1 border-t border-gray-100">
+            {[
+              { id: 'all', label: 'All Orders', count: orders.length },
+              { id: 'pending', label: 'Pending', count: orders.filter(o => o.status === 'pending').length },
+              { id: 'confirmed', label: 'Confirmed', count: orders.filter(o => o.status === 'confirmed').length },
+              { id: 'completed', label: 'Completed', count: orders.filter(o => o.status === 'completed').length },
+              { id: 'cancelled', label: 'Cancelled', count: orders.filter(o => o.status === 'cancelled').length },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setStatusFilter(tab.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  statusFilter === tab.id
+                    ? 'bg-primary-500 text-white shadow-xs'
+                    : 'bg-surface-secondary text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {tab.label} ({tab.count})
+              </button>
+            ))}
+          </div>
+
+          {/* Secondary Filters: Order Type, Date, Sort & Reset */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-gray-100">
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Order Type Filter */}
+              <div className="flex items-center gap-1.5 bg-surface-secondary px-2.5 py-1.5 rounded-xl border border-surface-border text-xs">
+                <Filter className="w-3.5 h-3.5 text-gray-400" />
+                <span className="text-gray-500 font-medium hidden sm:inline">Type:</span>
+                <select
+                  value={orderTypeFilter}
+                  onChange={(e) => setOrderTypeFilter(e.target.value)}
+                  className="bg-transparent text-gray-800 font-semibold focus:outline-none cursor-pointer text-xs"
+                >
+                  <option value="all">All Types</option>
+                  <option value="Shop Pickup">Shop Pickup</option>
+                  <option value="Delivery">Home Delivery</option>
+                </select>
+              </div>
+
+              {/* Date Filter */}
+              <div className="flex items-center gap-1.5 bg-surface-secondary px-2.5 py-1.5 rounded-xl border border-surface-border text-xs">
+                <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                <span className="text-gray-500 font-medium hidden sm:inline">Date:</span>
+                <select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="bg-transparent text-gray-800 font-semibold focus:outline-none cursor-pointer text-xs"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">This Month</option>
+                </select>
+              </div>
+
+              {/* Sort Filter */}
+              <div className="flex items-center gap-1.5 bg-surface-secondary px-2.5 py-1.5 rounded-xl border border-surface-border text-xs">
+                <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
+                <span className="text-gray-500 font-medium hidden sm:inline">Sort:</span>
+                <select
+                  value={sortFilter}
+                  onChange={(e) => setSortFilter(e.target.value)}
+                  className="bg-transparent text-gray-800 font-semibold focus:outline-none cursor-pointer text-xs"
+                >
+                  <option value="newest">Latest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="amount_high">Total: High to Low</option>
+                  <option value="amount_low">Total: Low to High</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Results count & Clear Filters */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-gray-500">
+                Showing <strong className="text-surface-text">{filteredOrders.length}</strong> of {orders.length}
+              </span>
+              {hasActiveFilters && (
+                <button
+                  onClick={handleResetFilters}
+                  className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 font-semibold hover:underline bg-primary-50 px-2 py-1 rounded-lg border border-primary-100 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Clear Filters</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Orders Table */}
         <div className="bg-white rounded-3xl border border-surface-border shadow-subtle overflow-hidden">
           <div className="overflow-x-auto">
             {filteredOrders.length === 0 ? (
-              <div className="p-12 text-center text-xs text-gray-400">
-                No orders found under this status.
+              <div className="p-12 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-gray-50 text-gray-400 flex items-center justify-center mx-auto">
+                  <Search className="w-6 h-6" />
+                </div>
+                <h3 className="text-sm font-bold text-surface-text">No orders found</h3>
+                <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                  {hasActiveFilters
+                    ? `No orders match your mobile search "${searchQuery}" or selected filters.`
+                    : 'No orders have been received yet for this shop.'}
+                </p>
+                {hasActiveFilters && (
+                  <Button size="sm" variant="outline" onClick={handleResetFilters}>
+                    Reset Search & Filters
+                  </Button>
+                )}
               </div>
             ) : (
               <table className="w-full text-left text-sm">
@@ -133,7 +391,8 @@ export default function AdminOrders() {
                   <tr>
                     <th className="px-5 py-3">Order Ref</th>
                     <th className="px-5 py-3">Date</th>
-                    <th className="px-5 py-3">Customer</th>
+                    <th className="px-5 py-3">Customer & Mobile</th>
+                    <th className="px-5 py-3">Type</th>
                     <th className="px-5 py-3">Items Summary</th>
                     <th className="px-5 py-3">Order Total</th>
                     <th className="px-5 py-3">Status</th>
@@ -143,30 +402,51 @@ export default function AdminOrders() {
                 <tbody className="divide-y divide-gray-100">
                   {filteredOrders.map((order) => {
                     const itemCount = order.items ? order.items.reduce((s, it) => s + it.quantity, 0) : 0;
+                    const cleanMobile = (order.customerMobile || '').replace(/\D/g, '');
+                    const isDelivery = (order.orderType || '').toLowerCase() === 'delivery';
+
                     return (
                       <tr key={order.id} className="hover:bg-gray-50/60 transition-colors">
                         <td className="px-5 py-3.5 font-mono text-xs font-bold text-surface-text">
                           {order.orderReference}
                         </td>
 
-                        <td className="px-5 py-3.5 text-xs text-gray-500">
+                        <td className="px-5 py-3.5 text-xs text-gray-500 whitespace-nowrap">
                           {formatDate(order.createdAt)}
                         </td>
 
                         <td className="px-5 py-3.5">
                           <p className="font-bold text-xs text-surface-text">{order.customerName}</p>
-                          <p className="text-[11px] text-gray-400 font-mono">+{order.customerMobile}</p>
+                          <a
+                            href={`tel:${cleanMobile}`}
+                            className="inline-flex items-center gap-1 text-[11px] text-primary-600 hover:text-primary-700 font-mono font-semibold mt-0.5 hover:underline"
+                            title="Call customer"
+                          >
+                            <Phone className="w-3 h-3" />
+                            <span>{order.customerMobile}</span>
+                          </a>
+                        </td>
+
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                            isDelivery
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : 'bg-gray-100 text-gray-700 border border-gray-200'
+                          }`}>
+                            {isDelivery ? <Truck className="w-3 h-3" /> : <Store className="w-3 h-3" />}
+                            <span>{order.orderType || 'Shop Pickup'}</span>
+                          </span>
                         </td>
 
                         <td className="px-5 py-3.5 text-xs text-gray-600">
                           <span className="font-semibold text-gray-800">{itemCount} items</span>
-                          <span className="text-gray-400 block text-[11px]">
+                          <span className="text-gray-400 block text-[11px] max-w-xs truncate">
                             {order.items?.map(it => it.name).slice(0, 2).join(', ')}
                             {order.items?.length > 2 ? '...' : ''}
                           </span>
                         </td>
 
-                        <td className="px-5 py-3.5 font-extrabold text-sm text-primary-600">
+                        <td className="px-5 py-3.5 font-extrabold text-sm text-primary-600 whitespace-nowrap">
                           {formatCurrency(order.total)}
                         </td>
 
@@ -187,7 +467,7 @@ export default function AdminOrders() {
                             </button>
 
                             <a
-                              href={`https://wa.me/${order.customerMobile.replace(/\D/g, '')}?text=${encodeURIComponent(`Hello ${order.customerName}! We have received your crackers order ${order.orderReference} at ${shop?.name}.`)}`}
+                              href={`https://wa.me/${cleanMobile}?text=${encodeURIComponent(`Hello ${order.customerName}! We have received your crackers order ${order.orderReference} at ${shop?.name || 'our shop'}.`)}`}
                               target="_blank"
                               rel="noreferrer"
                               className="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
@@ -222,8 +502,14 @@ export default function AdminOrders() {
                   <span className="font-bold text-surface-text">{selectedOrder.customerName}</span>
                 </div>
                 <div>
-                  <span className="text-gray-400 block font-medium">Mobile:</span>
-                  <span className="font-mono font-bold text-surface-text">{selectedOrder.customerMobile}</span>
+                  <span className="text-gray-400 block font-medium">Mobile Number:</span>
+                  <a
+                    href={`tel:${(selectedOrder.customerMobile || '').replace(/\D/g, '')}`}
+                    className="font-mono font-bold text-primary-600 hover:underline inline-flex items-center gap-1"
+                  >
+                    <Phone className="w-3 h-3" />
+                    <span>{selectedOrder.customerMobile}</span>
+                  </a>
                 </div>
                 <div>
                   <span className="text-gray-400 block font-medium">Order Type:</span>
@@ -309,7 +595,7 @@ export default function AdminOrders() {
                 </div>
 
                 <a
-                  href={`https://wa.me/${selectedOrder.customerMobile.replace(/\D/g, '')}?text=${encodeURIComponent(`Hello ${selectedOrder.customerName}! Your order ${selectedOrder.orderReference} at ${shop?.name} is ${selectedOrder.status.toUpperCase()}. Thank you!`)}`}
+                  href={`https://wa.me/${(selectedOrder.customerMobile || '').replace(/\D/g, '')}?text=${encodeURIComponent(`Hello ${selectedOrder.customerName}! Your order ${selectedOrder.orderReference} at ${shop?.name || 'our shop'} is ${selectedOrder.status.toUpperCase()}. Thank you!`)}`}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#25D366] hover:bg-[#20BD5A] text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
