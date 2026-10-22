@@ -105,7 +105,7 @@ export default function DeveloperLogin() {
               className="w-full text-left p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-xs transition-colors flex items-center justify-between"
             >
               <div>
-                <span className="font-bold text-gray-800 block">developer@crackzo.com</span>
+                <span classNam  e="font-bold text-gray-800 block">developer@crackzo.com</span>
                 <span className="text-gray-500 text-[10px]">Password: admin123</span>
               </div>
               <span className="text-[11px] text-primary-600 font-bold">Auto-Fill</span>
