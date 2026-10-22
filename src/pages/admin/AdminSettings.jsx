@@ -17,7 +17,8 @@ import {
   Save,
   ShieldCheck,
   Eye,
-  EyeOff
+  EyeOff,
+  X
 } from 'lucide-react';
 
 export default function AdminSettings() {
@@ -73,15 +74,25 @@ export default function AdminSettings() {
   }, [currentShopId, showToast]);
 
   const handleLogoFileChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        showToast('Please select an image file', 'error');
+        showToast('Please select a valid image file (PNG, JPG, WEBP, SVG)', 'error');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Logo image must be smaller than 5MB', 'error');
         return;
       }
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file));
     }
+  };
+
+  const handleClearLogo = () => {
+    setLogoFile(null);
+    setLogoPreview('');
+    setFormData(prev => ({ ...prev, logoUrl: '/CrackzoLogo.png' }));
   };
 
   const handleSubmit = async (e) => {
@@ -100,6 +111,9 @@ export default function AdminSettings() {
       });
 
       setShop(updated);
+      setFormData(prev => ({ ...prev, logoUrl: finalLogoUrl }));
+      setLogoFile(null);
+      setLogoPreview('');
       showToast('Shop settings saved successfully!', 'success');
     } catch {
       showToast('Failed to save settings', 'error');
@@ -168,32 +182,55 @@ export default function AdminSettings() {
             {/* Logo Upload */}
             <div className="space-y-2 pt-1">
               <label className="block text-xs font-semibold text-gray-700 tracking-wide">
-                Shop Logo
+                Shop Logo (Upload from Local Device)
               </label>
-              <div className="flex items-center gap-4 p-4 border border-dashed border-gray-300 rounded-2xl bg-gray-50/50">
-                <img
-                  src={logoPreview || formData.logoUrl || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=200&auto=format&fit=crop&q=80'}
-                  alt="Logo preview"
-                  className="w-16 h-16 rounded-xl object-cover border border-gray-200 shrink-0"
-                />
-                <div className="space-y-2 flex-1">
-                  <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 shadow-xs hover:bg-gray-50">
-                    <Upload className="w-4 h-4 text-primary-500" />
-                    <span>Upload Logo</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoFileChange}
-                      className="hidden"
-                    />
-                  </label>
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-dashed border-gray-300 rounded-2xl bg-gray-50/50">
+                <div className="w-16 h-16 rounded-xl overflow-hidden bg-white border border-gray-200 shrink-0 p-1 flex items-center justify-center shadow-xs">
+                  <img
+                    src={logoPreview || formData.logoUrl || '/CrackzoLogo.png'}
+                    alt="Logo preview"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div className="space-y-2 flex-1 w-full">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 shadow-xs hover:bg-gray-50 transition-colors">
+                      <Upload className="w-4 h-4 text-primary-500" />
+                      <span>Upload Logo from Device</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                    {(logoFile || logoPreview) && (
+                      <button
+                        type="button"
+                        onClick={handleClearLogo}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>Remove Selected</span>
+                      </button>
+                    )}
+                    {logoFile && (
+                      <span className="text-[11px] text-emerald-600 font-medium truncate max-w-[200px]">
+                        ✓ {logoFile.name} (ready to save)
+                      </span>
+                    )}
+                  </div>
                   <Input
                     placeholder="or paste logo image URL"
                     value={formData.logoUrl}
                     onChange={(e) => {
-                      setFormData({ ...formData, logoUrl: e.target.value });
-                      setLogoPreview('');
+                      setFormData(prev => ({ ...prev, logoUrl: e.target.value }));
+                      if (logoPreview) {
+                        setLogoFile(null);
+                        setLogoPreview('');
+                      }
                     }}
+                    helperText="Upload an image from your device (PNG, JPG, WEBP, SVG) or paste a hosted URL."
                   />
                 </div>
               </div>
