@@ -95,7 +95,7 @@ export default function DeveloperLogin() {
           </form>
 
           {/* Quick Demo Helper */}
-          <div className="mt-6 pt-5 border-t border-gray-100">
+          {/* <div className="mt-6 pt-5 border-t border-gray-100">
             <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mb-2">
               Quick Test Credentials
             </p>
@@ -110,7 +110,7 @@ export default function DeveloperLogin() {
               </div>
               <span className="text-[11px] text-primary-600 font-bold">Auto-Fill</span>
             </button>
-          </div>
+          </div> */}
 
           <div className="mt-6 text-center">
             <Link
