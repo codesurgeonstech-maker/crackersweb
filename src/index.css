@@ -61,3 +61,51 @@
     display: none !important;
   }
 }
+
+/* Diwali Special Animations */
+@keyframes diwaliFlame {
+  0%, 100% {
+    transform: scale(1) rotate(-1.5deg);
+    filter: drop-shadow(0 0 5px #F59E0B) drop-shadow(0 0 10px #EF4444);
+  }
+  50% {
+    transform: scale(1.15, 1.28) rotate(2deg);
+    filter: drop-shadow(0 0 10px #FBBF24) drop-shadow(0 0 18px #F97316);
+  }
+}
+
+.animate-diwali-flame {
+  animation: diwaliFlame 1.3s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@keyframes sparkleTwinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.7) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(180deg);
+  }
+}
+
+.animate-sparkle-twinkle {
+  animation: sparkleTwinkle 2.2s ease-in-out infinite;
+}
+
+@keyframes festivePulse {
+  0%, 100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+.animate-festive-pulse {
+  animation: festivePulse 2s ease-in-out infinite;
+}
+

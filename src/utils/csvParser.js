@@ -92,7 +92,7 @@ export function parseProductsCSV(csvText, defaultImageUrl = '') {
     const originalPrice = rawOrig ? Number(rawOrig) : null;
 
     const categoryRaw = row[categoryIdx] ? row[categoryIdx].replace(/^["']|["']$/g, '').trim() : '';
-    const description = row[descriptionIdx] ? row[descriptionIdx].replace(/^["']|["']$/g, '').trim() : 'Direct Sivakasi quality crackers';
+    const description = row[descriptionIdx] ? row[descriptionIdx].replace(/^["']|["']$/g, '').trim() : 'Premium festival crackers';
 
     let imageUrl = row[imageUrlIdx] ? row[imageUrlIdx].replace(/^["']|["']$/g, '').trim() : '';
     if (!imageUrl && defaultImageUrl) {
@@ -167,7 +167,7 @@ export function parseCategoriesCSV(csvText) {
 export function getSampleProductsCSV() {
   return `Product Name,Category,Selling Price,MRP / Original Price,Description,Image URL,Stock Quantity,Is Available
 "10 cm Electric Sparklers","Sparklers",65,120,"Crackling golden sparks, 10 pcs pack safe for family celebration","https://images.unsplash.com/photo-1514565131-fce0801e5785?w=500&auto=format&fit=crop&q=80",200,Yes
-"Mega 1000 Wala Garland","Garland Crackers",750,1400,"Traditional Sivakasi red ribbon roll with thunderous celebratory sounds","https://images.unsplash.com/photo-1576400883215-7083980b6197?w=500&auto=format&fit=crop&q=80",50,Yes
+"Mega 1000 Wala Garland","Garland Crackers",750,1400,"Traditional celebratory red ribbon roll with thunderous sounds","https://images.unsplash.com/photo-1576400883215-7083980b6197?w=500&auto=format&fit=crop&q=80",50,Yes
 "Special Flower Pots Ashoka","Flower Pots",140,260,"Fountain of sparkling silver and gold showers, 10 pcs box","https://images.unsplash.com/photo-1514565131-fce0801e5785?w=500&auto=format&fit=crop&q=80",120,Yes
 "Ground Chakkar Deluxe","Chakkars",90,160,"High-speed spinning wheel with vibrant green and red sparks","https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=500&auto=format&fit=crop&q=80",150,Yes
 "12 Shot Sky Symphony","Aerial Shots",320,600,"Multi-colour aerial bursts with whistling sound and brocade crown","https://images.unsplash.com/photo-1498931299472-f7a63a5a1cfa?w=500&auto=format&fit=crop&q=80",80,Yes`;

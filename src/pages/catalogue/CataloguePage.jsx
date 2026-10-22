@@ -5,6 +5,7 @@ import CategoryNav from '../../components/categories/CategoryNav';
 import ProductGrid from '../../components/products/ProductGrid';
 import ProductDetailModal from '../../components/products/ProductDetailModal';
 import CartDrawer from '../../components/cart/CartDrawer';
+import DiwaliHeroBanner from '../../components/common/DiwaliHeroBanner';
 import { getShopBySlug } from '../../services/shopService';
 import { getShopCategories } from '../../services/categoryService';
 import { getShopProducts } from '../../services/productService';
@@ -73,7 +74,7 @@ export default function CataloguePage() {
             <Sparkles className="w-6 h-6 text-yellow-300 fill-yellow-300" />
           </div>
           <h2 className="font-bold text-surface-text text-base">Loading festive catalogue...</h2>
-          <p className="text-xs text-gray-400">Fetching verified Sivakasi fireworks</p>
+          <p className="text-xs text-gray-400">Fetching verified festive fireworks & sparklers</p>
         </div>
       </div>
     );
@@ -115,28 +116,48 @@ export default function CataloguePage() {
     return acc;
   }, {});
 
+  const productCounts = categories.reduce((acc, c) => {
+    acc[c.id] = products.filter(p => p.categoryId === c.id).length;
+    return acc;
+  }, { all: products.length });
+
   return (
     <CustomerLayout
       shop={shop}
       searchTerm={searchTerm}
       onSearchChange={setSearchTerm}
+      categories={categories}
+      selectedCategoryId={selectedCategoryId}
+      onSelectCategory={setSelectedCategoryId}
+      totalProductsCount={products.length}
       onOpenCart={() => setIsCartOpen(true)}
     >
       <div className="space-y-4">
-        {/* Welcome greeting card */}
-        {shop.welcomeMessage && (
-          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-surface-border shadow-subtle flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-sm sm:text-base font-extrabold text-surface-text flex items-center gap-2">
-                <span>Festival Crackers Collection</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-primary-50 text-primary-600 px-2 py-0.5 rounded-md border border-primary-100">
-                  Direct Sivakasi
-                </span>
-              </h2>
-              <p className="text-xs text-gray-500 mt-1 max-w-2xl leading-relaxed">
-                {shop.welcomeMessage}
-              </p>
+        {/* Festive Diwali Showcase Hero Banner */}
+        <DiwaliHeroBanner shop={shop} />
+
+        {/* Active Filter Indicator */}
+        {(searchTerm || (selectedCategoryId !== 'all' && selectedCategoryId)) && (
+          <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-3 flex items-center justify-between gap-3 text-xs shadow-xs">
+            <div className="flex items-center gap-2 text-amber-900 font-semibold truncate">
+              <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+              <span className="truncate">
+                Showing {filteredProducts.length} items
+                {selectedCategoryId && selectedCategoryId !== 'all' && categoryMap[selectedCategoryId]
+                  ? ` in "${categoryMap[selectedCategoryId]}"`
+                  : ''}
+                {searchTerm ? ` matching "${searchTerm}"` : ''}
+              </span>
             </div>
+            <button
+              onClick={() => {
+                setSelectedCategoryId('all');
+                setSearchTerm('');
+              }}
+              className="px-2.5 py-1 text-xs font-bold text-red-600 hover:text-red-700 bg-white border border-red-200 rounded-lg shrink-0 shadow-xs transition-colors"
+            >
+              Reset Filters
+            </button>
           </div>
         )}
 
@@ -145,6 +166,7 @@ export default function CataloguePage() {
           categories={categories}
           selectedCategoryId={selectedCategoryId}
           onSelectCategory={setSelectedCategoryId}
+          productCounts={productCounts}
         />
 
         {/* Products Grid */}

@@ -257,15 +257,23 @@ export default function AdminDashboard() {
                 </Link>
               </div>
 
-              <div className="space-y-3">
-                {categorySummary.map((cat, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-gray-700">{cat.name}</span>
-                    <span className="font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                      {cat.count} items
-                    </span>
-                  </div>
-                ))}
+              {/* Category Items Scroller */}
+              <div className="space-y-2 max-h-60 sm:max-h-72 overflow-y-auto pr-1">
+                {categorySummary.length === 0 ? (
+                  <p className="text-xs text-gray-400 py-6 text-center">No categories recorded yet</p>
+                ) : (
+                  categorySummary.map((cat, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between text-xs py-1.5 px-2 rounded-xl hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="font-medium text-gray-700 truncate pr-2">{cat.name}</span>
+                      <span className="font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full shrink-0 text-[11px]">
+                        {cat.count} items
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { formatCurrency } from '../../utils/formatters';
 import { useCart } from '../../hooks/useCart';
 import { useToast } from '../../hooks/useToast';
+import { triggerMiniSparkle } from '../../utils/confetti';
 import Badge from '../common/Badge';
 
 export default function ProductCard({
@@ -26,6 +27,7 @@ export default function ProductCard({
     e.stopPropagation();
     if (!product.isAvailable || !shopAcceptsOrders) return;
 
+    triggerMiniSparkle(e);
     setIsAdding(true);
     addToCart(product, quantity);
     showToast(`Added ${quantity}x "${product.name}" to cart!`, 'success');
@@ -51,7 +53,7 @@ export default function ProductCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
       onClick={() => onOpenDetails && onOpenDetails(product)}
-      className="group bg-white rounded-2xl border border-surface-border hover:border-primary-300 shadow-subtle hover:shadow-card transition-all duration-200 overflow-hidden flex flex-col justify-between cursor-pointer"
+      className="group bg-white rounded-2xl border border-surface-border hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/5 transition-all duration-300 overflow-hidden flex flex-col justify-between cursor-pointer"
     >
       <div>
         {/* Product Image & Badges */}
@@ -67,9 +69,9 @@ export default function ProductCard({
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
 
-          {/* Discount Badge */}
+          {/* Festive Discount Badge */}
           {discountPercent > 0 && (
-            <div className="absolute top-2.5 left-2.5 bg-primary-500 text-white text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-lg shadow-xs">
+            <div className="absolute top-2.5 left-2.5 bg-gradient-to-r from-red-600 via-primary-500 to-amber-500 text-white text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-lg shadow-sm border border-amber-300/40">
               {discountPercent}% OFF
             </div>
           )}

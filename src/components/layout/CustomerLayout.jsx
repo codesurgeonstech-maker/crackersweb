@@ -1,15 +1,20 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, MessageCircle, Search, Flame } from 'lucide-react';
+import { ShoppingCart, MessageCircle, Search, Sparkles, Filter } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { motion, AnimatePresence } from 'framer-motion';
 import Footer from '../common/Footer';
+import DiwaliDiya from '../common/DiwaliDiya';
 import { formatCurrency } from '../../utils/formatters';
 
 export default function CustomerLayout({
   shop,
   searchTerm = '',
   onSearchChange,
+  categories = [],
+  selectedCategoryId = 'all',
+  onSelectCategory,
+  totalProductsCount = 0,
   children,
   onOpenCart
 }) {
@@ -26,6 +31,15 @@ export default function CustomerLayout({
 
   return (
     <div className="min-h-screen bg-surface-secondary flex flex-col">
+      {/* Diwali Festive Announcement Strip */}
+      <div className="bg-gradient-to-r from-amber-600 via-red-600 to-amber-600 text-amber-50 text-[11px] sm:text-xs font-semibold py-1 px-4 text-center flex items-center justify-center gap-2 shadow-xs overflow-hidden">
+        <DiwaliDiya size="xs" glow={false} />
+        <span className="truncate">
+          Happy Diwali Celebrations! ✨ Special Festive Fireworks & Quick WhatsApp Ordering
+        </span>
+        <DiwaliDiya size="xs" glow={false} />
+      </div>
+
       {/* Top Notice Banner if shop doesn't accept orders or has minimum order value */}
       {shop?.acceptsOrders === false ? (
         <div className="bg-amber-500 text-white text-xs font-semibold px-4 py-2 text-center shadow-xs">
@@ -57,37 +71,60 @@ export default function CustomerLayout({
                 />
               )}
               <div className="min-w-0">
-                <h1 className="font-extrabold text-base sm:text-lg text-surface-text tracking-tight truncate leading-tight">
-                  {shop?.name || "Crackers Shop"}
+                <h1 className="font-extrabold text-base sm:text-lg text-surface-text tracking-tight truncate leading-tight flex items-center gap-1.5">
+                  <span>{shop?.name || "Crackers Shop"}</span>
+                  <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded border border-amber-300/60 hidden sm:inline-block">
+                    Diwali 2026
+                  </span>
                 </h1>
-                <p className="text-[11px] text-gray-500 truncate flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                  Verified Sivakasi Fireworks
+                <p className="text-[11px] text-gray-500 truncate flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                  Festive Diwali Fireworks Collection 🪔
                 </p>
               </div>
             </Link>
 
-            {/* Live Search bar for desktop */}
+            {/* Live Search bar & Categories Filter for desktop */}
             {onSearchChange && (
-              <div className="hidden md:flex flex-1 max-w-md mx-4">
-                <div className="relative w-full">
+              <div className="hidden md:flex flex-1 max-w-xl mx-4 items-center gap-2">
+                <div className="relative flex-1">
                   <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => onSearchChange(e.target.value)}
                     placeholder="Search sparklers, flowerpots, gift boxes..."
-                    className="w-full pl-10 pr-4 py-2 bg-surface-secondary border border-surface-border rounded-xl text-sm focus:outline-none focus:border-primary-500 focus:bg-white transition-all placeholder:text-gray-400"
+                    className="w-full pl-10 pr-9 py-2 bg-surface-secondary border border-surface-border rounded-xl text-sm focus:outline-none focus:border-primary-500 focus:bg-white transition-all placeholder:text-gray-400 font-medium"
                   />
                   {searchTerm && (
                     <button
                       onClick={() => onSearchChange('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600 bg-gray-200/60 rounded-full w-4 h-4 flex items-center justify-center font-bold"
                     >
-                      Clear
+                      ×
                     </button>
                   )}
                 </div>
+
+                {/* Categories Filter right after the search bar */}
+                {categories && categories.length > 0 && (
+                  <div className="flex items-center gap-1.5 bg-surface-secondary px-3 py-2 rounded-xl border border-surface-border text-xs shrink-0 hover:border-gray-300 focus-within:border-primary-500 focus-within:bg-white transition-all">
+                    <Filter className="w-3.5 h-3.5 text-primary-600 shrink-0" />
+                    <span className="text-gray-500 font-medium whitespace-nowrap">Category:</span>
+                    <select
+                      value={selectedCategoryId || 'all'}
+                      onChange={(e) => onSelectCategory && onSelectCategory(e.target.value)}
+                      className="bg-transparent text-gray-800 font-bold focus:outline-none cursor-pointer text-xs pr-1"
+                    >
+                      <option value="all">All Categories ({totalProductsCount || categories.length})</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             )}
 
@@ -129,25 +166,46 @@ export default function CustomerLayout({
             </div>
           </div>
 
-          {/* Search bar row on mobile */}
+          {/* Search bar & Categories Filter row on mobile */}
           {onSearchChange && (
             <div className="md:hidden pb-3 pt-1">
-              <div className="relative w-full">
-                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => onSearchChange(e.target.value)}
-                  placeholder="Search sparklers, flowerpots..."
-                  className="w-full pl-9 pr-8 py-2 bg-surface-secondary border border-surface-border rounded-xl text-xs focus:outline-none focus:border-primary-500 focus:bg-white transition-all"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => onSearchChange('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400"
-                  >
-                    ×
-                  </button>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    placeholder="Search sparklers, flowerpots..."
+                    className="w-full pl-9 pr-7 py-2 bg-surface-secondary border border-surface-border rounded-xl text-xs focus:outline-none focus:border-primary-500 focus:bg-white transition-all font-medium"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => onSearchChange('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+
+                {/* Categories Filter right after the search bar on mobile */}
+                {categories && categories.length > 0 && (
+                  <div className="flex items-center gap-1 bg-surface-secondary px-2.5 py-2 rounded-xl border border-surface-border text-xs shrink-0 focus-within:border-primary-500">
+                    <Filter className="w-3.5 h-3.5 text-primary-600 shrink-0" />
+                    <select
+                      value={selectedCategoryId || 'all'}
+                      onChange={(e) => onSelectCategory && onSelectCategory(e.target.value)}
+                      className="bg-transparent text-gray-800 font-bold focus:outline-none cursor-pointer text-xs max-w-[125px] truncate"
+                    >
+                      <option value="all">All ({totalProductsCount || categories.length})</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 )}
               </div>
             </div>

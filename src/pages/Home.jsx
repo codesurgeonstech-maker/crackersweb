@@ -82,7 +82,7 @@ export default function Home() {
         <div className="max-w-3xl mx-auto relative z-10 space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 border border-primary-200 text-primary-700 text-xs font-bold shadow-xs">
             <Sparkles className="w-3.5 h-3.5 text-primary-600" />
-            <span>100% Sivakasi Fireworks & Direct WhatsApp Ordering</span>
+            <span>Festive Diwali Fireworks & Direct WhatsApp Ordering</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black text-surface-text tracking-tight leading-tight">
@@ -275,7 +275,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="bg-white border-t border-surface-border py-8 text-center text-xs text-gray-500">
-        <p>© {new Date().getFullYear()} Crackzo Platform. Sivakasi Fireworks Multi-Shop Network.</p>
+        <p>© {new Date().getFullYear()} Crackzo Platform. Festive Fireworks Multi-Shop Network.</p>
       </footer>
     </div>
   );

@@ -4,6 +4,7 @@ import Button from '../common/Button';
 import { formatCurrency } from '../../utils/formatters';
 import { useCart } from '../../hooks/useCart';
 import { useToast } from '../../hooks/useToast';
+import { triggerMiniSparkle } from '../../utils/confetti';
 import { Plus, Minus, ShoppingBag, ShieldAlert, Check } from 'lucide-react';
 
 export default function ProductDetailModal({
@@ -25,8 +26,9 @@ export default function ProductDetailModal({
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e) => {
     if (!product.isAvailable || !shopAcceptsOrders) return;
+    triggerMiniSparkle(e);
     setIsAdding(true);
     addToCart(product, quantity);
     showToast(`Added ${quantity}x "${product.name}" to cart!`, 'success');
@@ -83,7 +85,7 @@ export default function ProductDetailModal({
 
             {/* Description */}
             <p className="text-xs sm:text-sm text-gray-600 leading-relaxed mb-4">
-              {product.description || "Premium certified Sivakasi fireworks with dazzling festival effects and safe combustion."}
+              {product.description || "Premium certified festive fireworks with dazzling effects and safe combustion."}
             </p>
 
             {/* Safety badge */}

@@ -18,6 +18,7 @@ import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Modal from '../../components/common/Modal';
+import Pagination from '../../components/common/Pagination';
 import { useToast } from '../../hooks/useToast';
 import {
   Plus,
@@ -76,6 +77,10 @@ export default function AdminProducts() {
   const [savingProduct, setSavingProduct] = useState(false);
   const [uploadingProductImg, setUploadingProductImg] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
 
   // Bulk CSV Upload Modal
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
@@ -370,7 +375,7 @@ export default function AdminProducts() {
           categoryId: assignedCatId,
           price: Number(item.price) || 0,
           originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
-          description: item.description || 'Verified Sivakasi festival crackers item',
+          description: item.description || 'Verified festive crackers item',
           imageUrl: item.imageUrl || defaultImageUrl.trim() || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=500&auto=format&fit=crop&q=80',
           stockQuantity: Number(item.stockQuantity) || 100,
           isAvailable: item.isAvailable !== false
@@ -429,6 +434,16 @@ export default function AdminProducts() {
       return matchesSearch && matchesCat && matchesStock;
     });
   }, [products, search, selectedCategory, stockFilter]);
+
+  // Reset to first page when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedCategory, stockFilter]);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, currentPage, pageSize]);
 
   return (
     <AdminLayout>
@@ -558,31 +573,39 @@ export default function AdminProducts() {
                 </p>
               </div>
             ) : (
-              <table className="w-full text-left text-sm min-w-[720px]">
-                <thead className="bg-surface-secondary text-gray-500 text-xs uppercase font-semibold">
-                  <tr>
-                    <th className="px-5 py-3">Product</th>
-                    <th className="px-5 py-3">Category</th>
-                    <th className="px-5 py-3">Selling Price</th>
-                    <th className="px-5 py-3">Original / MRP</th>
-                    <th className="px-5 py-3">Stock Status</th>
-                    <th className="px-5 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredProducts.map((prod) => (
-                    <tr key={prod.id} className="hover:bg-gray-50/60 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={prod.imageUrl || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=200&auto=format&fit=crop&q=80'}
-                            alt={prod.name}
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=200&auto=format&fit=crop&q=80';
-                            }}
-                            className="w-12 h-12 rounded-xl object-cover bg-gray-100 border border-gray-200 shrink-0"
-                          />
+              <>
+                <table className="w-full text-left text-sm min-w-[760px]">
+                  <thead className="bg-surface-secondary text-gray-500 text-xs uppercase font-semibold">
+                    <tr>
+                      <th className="px-4 py-3 text-center w-16">S.No</th>
+                      <th className="px-5 py-3">Product</th>
+                      <th className="px-5 py-3">Category</th>
+                      <th className="px-5 py-3">Selling Price</th>
+                      <th className="px-5 py-3">Original / MRP</th>
+                      <th className="px-5 py-3">Stock Status</th>
+                      <th className="px-5 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {paginatedProducts.map((prod, idx) => {
+                      const sNo = (currentPage - 1) * pageSize + idx + 1;
+                      return (
+                        <tr key={prod.id} className="hover:bg-gray-50/60 transition-colors">
+                          <td className="px-4 py-3.5 text-center font-mono text-xs font-bold text-gray-500">
+                            {sNo}
+                          </td>
+
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={prod.imageUrl || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=200&auto=format&fit=crop&q=80'}
+                                alt={prod.name}
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=200&auto=format&fit=crop&q=80';
+                                }}
+                                className="w-12 h-12 rounded-xl object-cover bg-gray-100 border border-gray-200 shrink-0"
+                              />
                           <div className="min-w-0">
                             <p className="font-bold text-xs sm:text-sm text-surface-text truncate max-w-xs">
                               {prod.name}
@@ -662,12 +685,25 @@ export default function AdminProducts() {
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
+                  );
+                })}
+              </tbody>
               </table>
-            )}
-          </div>
+
+              {/* Pagination */}
+              <Pagination
+                currentPage={currentPage}
+                totalItems={filteredProducts.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                pageSizeOptions={[10, 15, 25, 50, 100]}
+                itemLabel="products"
+              />
+            </>
+          )}
         </div>
+      </div>
 
         {/* Add / Edit Product Overlay Popup Modal */}
         {productModalOpen && (

@@ -122,7 +122,7 @@ export default function AdminQRCode() {
             <div className="w-full bg-primary-500 text-white py-2 px-4 rounded-2xl mb-6 shadow-xs flex items-center justify-center gap-2">
               <Sparkles className="w-4 h-4 text-yellow-300 fill-yellow-300" />
               <span className="text-xs font-black tracking-widest uppercase">
-                Direct Sivakasi Crackers Catalogue
+                Festive Diwali Crackers Catalogue
               </span>
               <Sparkles className="w-4 h-4 text-yellow-300 fill-yellow-300" />
             </div>

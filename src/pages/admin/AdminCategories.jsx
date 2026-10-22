@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -13,6 +13,7 @@ import { parseCategoriesCSV, getSampleCategoriesCSV } from '../../utils/csvParse
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import Pagination from '../../components/common/Pagination';
 import { useToast } from '../../hooks/useToast';
 import {
   Layers,
@@ -41,6 +42,10 @@ export default function AdminCategories() {
   const [categoryName, setCategoryName] = useState('');
   const [displayOrder, setDisplayOrder] = useState(1);
   const [loading, setLoading] = useState(true);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Bulk CSV Modal
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
@@ -205,9 +210,21 @@ export default function AdminCategories() {
     showToast('Categories exported to CSV', 'success');
   };
 
-  const filteredCategories = categories.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const filteredCategories = useMemo(() => {
+    return categories.filter(c =>
+      c.name.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [categories, search]);
+
+  const paginatedCategories = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredCategories.slice(start, start + pageSize);
+  }, [filteredCategories, currentPage, pageSize]);
 
   return (
     <AdminLayout>
@@ -292,58 +309,77 @@ export default function AdminCategories() {
                 </p>
               </div>
             ) : (
-              <table className="w-full text-left text-sm min-w-[550px]">
-                <thead className="bg-surface-secondary text-gray-500 text-xs uppercase font-semibold">
-                  <tr>
-                    <th className="px-5 py-3">Order</th>
-                    <th className="px-5 py-3">Category Name</th>
-                    <th className="px-5 py-3">Products Listed</th>
-                    <th className="px-5 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredCategories.map((cat) => {
-                    const itemCount = products.filter(p => p.categoryId === cat.id).length;
-                    return (
-                      <tr key={cat.id} className="hover:bg-gray-50/60 transition-colors">
-                        <td className="px-5 py-3.5 font-mono text-xs font-bold text-gray-400">
-                          #{cat.displayOrder || 1}
-                        </td>
+              <>
+                <table className="w-full text-left text-sm min-w-[550px]">
+                  <thead className="bg-surface-secondary text-gray-500 text-xs uppercase font-semibold">
+                    <tr>
+                      <th className="px-4 py-3 text-center w-16">S.No</th>
+                      <th className="px-5 py-3">Category Name</th>
+                      <th className="px-5 py-3">Display Order</th>
+                      <th className="px-5 py-3">Products Listed</th>
+                      <th className="px-5 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {paginatedCategories.map((cat, idx) => {
+                      const sNo = (currentPage - 1) * pageSize + idx + 1;
+                      const itemCount = products.filter(p => p.categoryId === cat.id).length;
+                      return (
+                        <tr key={cat.id} className="hover:bg-gray-50/60 transition-colors">
+                          <td className="px-4 py-3.5 text-center font-mono text-xs font-bold text-gray-500">
+                            {sNo}
+                          </td>
 
-                        <td className="px-5 py-3.5 font-bold text-surface-text text-sm">
-                          {cat.name}
-                        </td>
+                          <td className="px-5 py-3.5 font-bold text-surface-text text-sm">
+                            {cat.name}
+                          </td>
 
-                        <td className="px-5 py-3.5">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
-                            <Package className="w-3 h-3 text-gray-400" />
-                            <span>{itemCount} items</span>
-                          </span>
-                        </td>
+                          <td className="px-5 py-3.5 font-mono text-xs font-bold text-gray-400">
+                            #{cat.displayOrder || 1}
+                          </td>
 
-                        <td className="px-5 py-3.5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => handleOpenEdit(cat)}
-                              className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                              title="Edit Category"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(cat)}
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Delete Category"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          <td className="px-5 py-3.5">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                              <Package className="w-3 h-3 text-gray-400" />
+                              <span>{itemCount} items</span>
+                            </span>
+                          </td>
+
+                          <td className="px-5 py-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => handleOpenEdit(cat)}
+                                className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                                title="Edit Category"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(cat)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Delete Category"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                {/* Pagination */}
+                <Pagination
+                  currentPage={currentPage}
+                  totalItems={filteredCategories.length}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                  pageSizeOptions={[10, 25, 50]}
+                  itemLabel="categories"
+                />
+              </>
             )}
           </div>
         </div>

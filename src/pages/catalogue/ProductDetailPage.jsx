@@ -7,6 +7,7 @@ import { getShopCategories } from '../../services/categoryService';
 import { formatCurrency } from '../../utils/formatters';
 import { useCart } from '../../hooks/useCart';
 import { useToast } from '../../hooks/useToast';
+import { triggerMiniSparkle } from '../../utils/confetti';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import {
@@ -76,8 +77,9 @@ export default function ProductDetailPage() {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e) => {
     if (!product.isAvailable || shop.acceptsOrders === false) return;
+    triggerMiniSparkle(e);
     setIsAdding(true);
     addToCart(product, quantity);
     showToast(`Added ${quantity}x "${product.name}" to cart!`, 'success');
@@ -127,7 +129,7 @@ export default function ProductDetailPage() {
                   {product.name}
                 </h1>
                 <p className="text-xs text-gray-400 mt-1">
-                  Verified Sivakasi fireworks selection • {shop.name}
+                  Verified festive fireworks selection • {shop.name}
                 </p>
               </div>
 
@@ -151,7 +153,7 @@ export default function ProductDetailPage() {
                   Description & Effect
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                  {product.description || "Authentic licensed fireworks manufactured under strict Sivakasi safety standards. Produces dazzling visual sparks and vibrant festive colors."}
+                  {product.description || "Authentic licensed festive fireworks manufactured under strict safety standards. Produces dazzling visual sparks and vibrant festive colors."}
                 </p>
               </div>
 
