@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-import { ShieldCheck, Mail, Lock, Sparkles, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, ArrowLeft } from 'lucide-react';
 
 export default function DeveloperLogin() {
   const [email, setEmail] = useState('');
@@ -31,11 +31,6 @@ export default function DeveloperLogin() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleFillDemo = () => {
-    setEmail('developer@crackzo.com');
-    setPassword('admin123');
   };
 
   return (
@@ -70,7 +65,7 @@ export default function DeveloperLogin() {
               icon={Mail}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="developer@crackers.com"
+              placeholder="e.g. mohanprakash@gmail.com"
               required
             />
 
@@ -93,24 +88,6 @@ export default function DeveloperLogin() {
               Sign In as Developer
             </Button>
           </form>
-
-          {/* Quick Demo Helper */}
-          {/* <div className="mt-6 pt-5 border-t border-gray-100">
-            <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mb-2">
-              Quick Test Credentials
-            </p>
-            <button
-              type="button"
-              onClick={handleFillDemo}
-              className="w-full text-left p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-xs transition-colors flex items-center justify-between"
-            >
-              <div>
-                <span classNam  e="font-bold text-gray-800 block">developer@crackzo.com</span>
-                <span className="text-gray-500 text-[10px]">Password: admin123</span>
-              </div>
-              <span className="text-[11px] text-primary-600 font-bold">Auto-Fill</span>
-            </button>
-          </div> */}
 
           <div className="mt-6 text-center">
             <Link

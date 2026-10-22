@@ -103,9 +103,9 @@ export default function DeveloperLayout({ children }) {
             </div>
             <div className="truncate text-xs">
               <p className="font-semibold text-surface-text truncate">
-                {userProfile?.displayName || 'Lead Developer'}
+                {userProfile?.displayName || 'Mohan Prakash'}
               </p>
-              <p className="text-gray-500 truncate">{userProfile?.email || 'developer@crackers.com'}</p>
+              <p className="text-gray-500 truncate">{userProfile?.email || 'mohanprakash@gmail.com'}</p>
             </div>
           </div>
           <Button

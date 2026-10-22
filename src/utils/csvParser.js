@@ -48,6 +48,22 @@ export function parseProductsCSV(csvText, defaultImageUrl = '') {
   const rows = parseCSV(csvText);
   if (rows.length === 0) return [];
 
+  const cleanDefaultImg = (defaultImageUrl || '').trim();
+
+  // Helper to test if a string looks like a valid image url / path
+  const isLikelyImageUrl = (str) => {
+    if (!str || typeof str !== 'string') return false;
+    const s = str.trim().toLowerCase();
+    if (s.startsWith('http://') || s.startsWith('https://') || s.startsWith('/') || s.startsWith('data:image/')) {
+      return true;
+    }
+    // Check if filename extension like .png, .jpg, .jpeg, .webp, .svg
+    if (/\.(png|jpe?g|webp|svg|gif)(\?.*)?$/i.test(s)) {
+      return true;
+    }
+    return false;
+  };
+
   // Check if first row is a header
   let startIndex = 0;
   const firstRow = rows[0].map(c => c.toLowerCase());
@@ -56,13 +72,13 @@ export function parseProductsCSV(csvText, defaultImageUrl = '') {
   );
 
   let nameIdx = 0;
-  let categoryIdx = 1;
-  let priceIdx = 2;
-  let originalPriceIdx = 3;
-  let descriptionIdx = 4;
-  let imageUrlIdx = 5;
-  let stockIdx = 6;
-  let availableIdx = 7;
+  let categoryIdx = hasHeader ? -1 : 1;
+  let priceIdx = hasHeader ? -1 : 2;
+  let originalPriceIdx = hasHeader ? -1 : 3;
+  let descriptionIdx = hasHeader ? -1 : 4;
+  let imageUrlIdx = hasHeader ? -1 : 5;
+  let stockIdx = hasHeader ? -1 : 6;
+  let availableIdx = hasHeader ? -1 : 7;
 
   if (hasHeader) {
     startIndex = 1;
@@ -82,27 +98,32 @@ export function parseProductsCSV(csvText, defaultImageUrl = '') {
 
   for (let i = startIndex; i < rows.length; i++) {
     const row = rows[i];
-    const name = row[nameIdx] ? row[nameIdx].replace(/^["']|["']$/g, '').trim() : '';
+    const name = (nameIdx !== -1 && row[nameIdx]) ? row[nameIdx].replace(/^["']|["']$/g, '').trim() : '';
     if (!name) continue;
 
-    const rawPrice = row[priceIdx] ? row[priceIdx].replace(/[^0-9.]/g, '') : '';
+    const rawPrice = (priceIdx !== -1 && row[priceIdx]) ? row[priceIdx].replace(/[^0-9.]/g, '') : '';
     const price = Number(rawPrice) || 0;
 
-    const rawOrig = row[originalPriceIdx] ? row[originalPriceIdx].replace(/[^0-9.]/g, '') : '';
+    const rawOrig = (originalPriceIdx !== -1 && row[originalPriceIdx]) ? row[originalPriceIdx].replace(/[^0-9.]/g, '') : '';
     const originalPrice = rawOrig ? Number(rawOrig) : null;
 
-    const categoryRaw = row[categoryIdx] ? row[categoryIdx].replace(/^["']|["']$/g, '').trim() : '';
-    const description = row[descriptionIdx] ? row[descriptionIdx].replace(/^["']|["']$/g, '').trim() : 'Premium festival crackers';
+    const categoryRaw = (categoryIdx !== -1 && row[categoryIdx]) ? row[categoryIdx].replace(/^["']|["']$/g, '').trim() : '';
+    const description = (descriptionIdx !== -1 && row[descriptionIdx]) ? row[descriptionIdx].replace(/^["']|["']$/g, '').trim() : 'Premium festive crackers';
 
-    let imageUrl = row[imageUrlIdx] ? row[imageUrlIdx].replace(/^["']|["']$/g, '').trim() : '';
-    if (!imageUrl && defaultImageUrl) {
-      imageUrl = defaultImageUrl.trim();
+    let rawImg = (imageUrlIdx !== -1 && row[imageUrlIdx]) ? row[imageUrlIdx].replace(/^["']|["']$/g, '').trim() : '';
+    let imageUrl = '';
+
+    // When defaultImageUrl is provided, omit all image URLs in the CSV and use this Default URL for all products
+    if (cleanDefaultImg) {
+      imageUrl = cleanDefaultImg;
+    } else if (isLikelyImageUrl(rawImg)) {
+      imageUrl = rawImg;
     }
 
-    const rawStock = row[stockIdx] ? row[stockIdx].replace(/[^0-9]/g, '') : '';
+    const rawStock = (stockIdx !== -1 && row[stockIdx]) ? row[stockIdx].replace(/[^0-9]/g, '') : '';
     const stockQuantity = rawStock ? Number(rawStock) : 100;
 
-    const rawAvailable = row[availableIdx] ? row[availableIdx].toLowerCase().trim() : 'yes';
+    const rawAvailable = (availableIdx !== -1 && row[availableIdx]) ? row[availableIdx].toLowerCase().trim() : 'yes';
     const isAvailable = rawAvailable !== 'no' && rawAvailable !== 'false' && rawAvailable !== '0' && rawAvailable !== 'sold out';
 
     parsedProducts.push({

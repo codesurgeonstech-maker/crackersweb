@@ -11,6 +11,10 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }) {
       <img
         src={item.imageUrl || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=200&auto=format&fit=crop&q=80'}
         alt={item.name}
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = '/CrackzoLogo.png';
+        }}
         className="w-16 h-16 rounded-xl object-cover bg-gray-100 border border-gray-200 shrink-0"
       />
 

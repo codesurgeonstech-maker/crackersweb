@@ -86,6 +86,8 @@ export default function AdminProducts() {
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [csvText, setCsvText] = useState('');
   const [defaultImageUrl, setDefaultImageUrl] = useState('');
+  const [defaultImgFile, setDefaultImgFile] = useState(null);
+  const [defaultImgPreview, setDefaultImgPreview] = useState('');
   const [importMode, setImportMode] = useState('upload'); // 'upload' | 'paste'
   const [parsedPreview, setParsedPreview] = useState([]);
   const [importing, setImporting] = useState(false);
@@ -301,8 +303,49 @@ export default function AdminProducts() {
 
   const handleDefaultImgChange = (url) => {
     setDefaultImageUrl(url);
-    if (csvText.trim()) {
+    if (defaultImgPreview) {
+      setDefaultImgFile(null);
+      setDefaultImgPreview('');
+    }
+    if (csvText && csvText.trim()) {
       const parsed = parseProductsCSV(csvText, url);
+      setParsedPreview(parsed);
+    }
+  };
+
+  const handleDefaultImgFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WEBP, SVG)', 'error');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size exceeds 5MB limit', 'error');
+      return;
+    }
+    try {
+      const previewUrl = URL.createObjectURL(file);
+      setDefaultImgFile(file);
+      setDefaultImgPreview(previewUrl);
+      const url = await uploadImage(file, currentShopId, 'products', 'default_import');
+      setDefaultImageUrl(url);
+      if (csvText && csvText.trim()) {
+        const parsed = parseProductsCSV(csvText, url);
+        setParsedPreview(parsed);
+      }
+      showToast('Default product image uploaded!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to process default image', 'error');
+    }
+  };
+
+  const handleClearDefaultImg = () => {
+    setDefaultImgFile(null);
+    setDefaultImgPreview('');
+    setDefaultImageUrl('');
+    if (csvText && csvText.trim()) {
+      const parsed = parseProductsCSV(csvText, '');
       setParsedPreview(parsed);
     }
   };
@@ -338,6 +381,16 @@ export default function AdminProducts() {
         categoryMapById[c.id] = c.id;
       });
 
+      const isLikelyImg = (str) => {
+        if (!str || typeof str !== 'string') return false;
+        const s = str.trim().toLowerCase();
+        return s.startsWith('http://') || s.startsWith('https://') || s.startsWith('/') || s.startsWith('data:image/');
+      };
+
+      const fallbackImg = isLikelyImg(defaultImageUrl)
+        ? defaultImageUrl.trim()
+        : 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=500&auto=format&fit=crop&q=80';
+
       const productsToCreate = [];
 
       for (const item of parsedPreview) {
@@ -370,13 +423,18 @@ export default function AdminProducts() {
           assignedCatId = currentCategories[0]?.id || 'general';
         }
 
+        // When defaultImageUrl is provided, omit all image URLs in the CSV and use this Default URL for all products
+        const itemImg = isLikelyImg(defaultImageUrl)
+          ? defaultImageUrl.trim()
+          : (isLikelyImg(item.imageUrl) ? item.imageUrl.trim() : fallbackImg);
+
         productsToCreate.push({
           name: item.name,
           categoryId: assignedCatId,
           price: Number(item.price) || 0,
           originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
           description: item.description || 'Verified festive crackers item',
-          imageUrl: item.imageUrl || defaultImageUrl.trim() || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=500&auto=format&fit=crop&q=80',
+          imageUrl: itemImg,
           stockQuantity: Number(item.stockQuantity) || 100,
           isAvailable: item.isAvailable !== false
         });
@@ -388,6 +446,8 @@ export default function AdminProducts() {
       setCsvText('');
       setParsedPreview([]);
       setDefaultImageUrl('');
+      setDefaultImgFile(null);
+      setDefaultImgPreview('');
       loadData();
     } catch {
       showToast('CSV import failed. Please check your data format.', 'error');
@@ -1057,22 +1117,59 @@ export default function AdminProducts() {
                 </div>
               )}
 
-              {/* Optional Default Image URL for items without image */}
-              <div className="space-y-1">
+              {/* Optional Default Image for items without image */}
+              <div className="space-y-1.5 pt-1">
                 <label className="block text-xs font-semibold text-gray-700">
-                  Default Image URL (Optional fallback for rows without image link):
+                  Default Product Image (Applies to all products & overrides CSV image links):
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <ImageIcon className="w-3.5 h-3.5" />
+                <div className="flex flex-col sm:flex-row items-center gap-3 p-3 border border-dashed border-gray-300 rounded-2xl bg-gray-50/60">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-white border border-gray-200 shrink-0 p-0.5 flex items-center justify-center shadow-xs">
+                    <img
+                      src={defaultImgPreview || defaultImageUrl || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=200&auto=format&fit=crop&q=80'}
+                      alt="Default Preview"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/CrackzoLogo.png';
+                      }}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
                   </div>
-                  <input
-                    type="url"
-                    value={defaultImageUrl}
-                    onChange={(e) => handleDefaultImgChange(e.target.value)}
-                    placeholder="https://images.unsplash.com/photo-1514565131-fce0801e5785..."
-                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-surface-border text-xs focus:outline-none focus:border-primary-500"
-                  />
+
+                  <div className="space-y-1.5 flex-1 w-full">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 rounded-xl shadow-xs transition-colors">
+                        <Upload className="w-3.5 h-3.5 text-primary-500" />
+                        <span>Upload Default Photo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleDefaultImgFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                      {(defaultImgPreview || defaultImageUrl) && (
+                        <button
+                          type="button"
+                          onClick={handleClearDefaultImg}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          <span>Clear</span>
+                        </button>
+                      )}
+                      {defaultImgFile && (
+                        <span className="text-[11px] text-emerald-600 font-medium truncate max-w-[180px]">
+                          ✓ {defaultImgFile.name}
+                        </span>
+                      )}
+                    </div>
+
+                    <Input
+                      placeholder="or paste image URL (e.g. https://...)"
+                      value={defaultImageUrl}
+                      onChange={(e) => handleDefaultImgChange(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1105,11 +1202,11 @@ export default function AdminProducts() {
                           <tr key={idx} className="hover:bg-gray-50/60">
                             <td className="px-3 py-2">
                               <img
-                                src={item.imageUrl || defaultImageUrl || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=100&auto=format&fit=crop&q=80'}
+                                src={(defaultImageUrl && defaultImageUrl.trim()) || item.imageUrl || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=100&auto=format&fit=crop&q=80'}
                                 alt="Thumb"
                                 onError={(e) => {
                                   e.target.onerror = null;
-                                  e.target.src = 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=100&auto=format&fit=crop&q=80';
+                                  e.target.src = '/CrackzoLogo.png';
                                 }}
                                 className="w-8 h-8 rounded-lg object-cover bg-gray-100 border border-gray-200"
                               />

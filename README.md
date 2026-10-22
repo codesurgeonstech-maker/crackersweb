@@ -45,7 +45,7 @@ A clean, modern, high-performance multi-tenant crackers shop catalogue and quick
 
 | Role | Email | Password | Assigned Shop |
 | :--- | :--- | :--- | :--- |
-| **Developer Admin** | `developer@crackers.com` | `admin123` | Multi-Tenant Platform |
+| **Developer Admin** | `mohanprakash@gmail.com` | `Kutty@007` | Multi-Tenant Platform |
 | **Shop Owner 1** | `murugan@crackers.com` | `murugan123` | Sri Murugan Crackers (`/shop/sri-murugan-crackers`) |
 | **Shop Owner 2** | `lakshmi@crackers.com` | `lakshmi123` | Lakshmi Crackers (`/shop/lakshmi-crackers`) |
 

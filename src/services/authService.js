@@ -19,10 +19,10 @@ import { auth, db, isFirebaseConfigured } from "./firebase";
 
 // System users for developer administration
 const SYSTEM_USERS = {
-  "developer@crackzo.com": {
+  "mohanprakash@gmail.com": {
     uid: "dev-super-admin",
-    email: "developer@crackzo.com",
-    displayName: "Lead Developer",
+    email: "mohanprakash@gmail.com",
+    displayName: "Mohan Prakash",
     role: "developer"
   }
 };
@@ -90,11 +90,11 @@ export async function signInUser(email, password) {
       }
 
       if (!profile || !profile.shopId) {
-        const isDev = normalizedEmail === 'developer@crackzo.com';
+        const isDev = normalizedEmail === 'mohanprakash@gmail.com';
         profile = {
           uid: cred.user.uid,
           email: cred.user.email,
-          displayName: profile?.displayName || (isDev ? 'Lead Developer' : 'Shop Owner'),
+          displayName: profile?.displayName || (isDev ? 'Mohan Prakash' : 'Shop Owner'),
           role: profile?.role || (isDev ? 'developer' : 'owner'),
           shopId: shopId
         };
@@ -105,9 +105,10 @@ export async function signInUser(email, password) {
         profile
       };
     } catch (err) {
-      // 1. If it's developer@crackzo.com and user doesn't exist yet, auto-create in Firebase Auth
+      // 1. If it's developer and user doesn't exist yet, auto-create in Firebase Auth
+      const isDev = normalizedEmail === 'mohanprakash@gmail.com';
       if (
-        normalizedEmail === 'developer@crackzo.com' &&
+        isDev &&
         (err.code === 'auth/user-not-found' ||
          err.code === 'auth/invalid-credential' ||
          err.code === 'auth/invalid-login-credentials')
@@ -117,7 +118,7 @@ export async function signInUser(email, password) {
           const devProfile = {
             uid: newCred.user.uid,
             email: normalizedEmail,
-            displayName: 'Lead Developer',
+            displayName: 'Mohan Prakash',
             role: 'developer',
             shopId: null
           };
@@ -204,15 +205,21 @@ export async function signInUser(email, password) {
         }
       }
 
-      // 4. Developer fallback if Email/Password is not enabled in Firebase Console
-      if (err.code === 'auth/operation-not-allowed') {
-        const message = 'Email/Password sign-in is NOT enabled in your Firebase Console! Go to Firebase Console > Authentication > Sign-in method, click "Email/Password" and toggle "Enable".';
-        if (normalizedEmail === 'developer@crackzo.com') {
-          console.warn(`${message} Falling back to local developer session.`);
-          const userSession = {
-            uid: SYSTEM_USERS[normalizedEmail].uid,
+      // 4. Developer fallback if Firebase Auth operation is not allowed or credentials failed
+      if (isDev) {
+        const isValidDevPass = password === 'Kutty@007';
+        if (isValidDevPass) {
+          console.warn(`Developer login authenticated via local session for ${normalizedEmail}.`);
+          const devUser = SYSTEM_USERS[normalizedEmail] || {
+            uid: 'dev-super-admin',
             email: normalizedEmail,
-            displayName: SYSTEM_USERS[normalizedEmail].displayName,
+            displayName: 'Mohan Prakash',
+            role: 'developer'
+          };
+          const userSession = {
+            uid: devUser.uid,
+            email: devUser.email,
+            displayName: devUser.displayName,
             role: 'developer',
             shopId: null
           };
@@ -221,7 +228,13 @@ export async function signInUser(email, password) {
             user: { uid: userSession.uid, email: userSession.email },
             profile: userSession
           };
+        } else {
+          throw new Error('Incorrect developer password.');
         }
+      }
+
+      if (err.code === 'auth/operation-not-allowed') {
+        const message = 'Email/Password sign-in is NOT enabled in your Firebase Console! Go to Firebase Console > Authentication > Sign-in method, click "Email/Password" and toggle "Enable".';
         throw new Error(message);
       }
 
@@ -232,6 +245,10 @@ export async function signInUser(email, password) {
   // Developer mode check
   const systemDev = SYSTEM_USERS[normalizedEmail];
   if (systemDev) {
+    const isValidDevPass = password === 'Kutty@007';
+    if (!isValidDevPass) {
+      throw new Error('Incorrect developer password.');
+    }
     const userSession = {
       uid: systemDev.uid,
       email: systemDev.email,
@@ -269,7 +286,7 @@ export async function signInUser(email, password) {
   }
 
   // Generic sign-in without mock shop assignment
-  const defaultRole = normalizedEmail.includes('dev') ? 'developer' : 'owner';
+  const defaultRole = normalizedEmail === 'mohanprakash@gmail.com' ? 'developer' : 'owner';
   const customUser = {
     uid: `user-${Date.now()}`,
     email: normalizedEmail,

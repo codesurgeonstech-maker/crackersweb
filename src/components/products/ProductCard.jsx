@@ -64,7 +64,7 @@ export default function ProductCard({
             loading="lazy"
             onError={(e) => {
               e.target.onerror = null;
-              e.target.src = 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=500&auto=format&fit=crop&q=80';
+              e.target.src = '/CrackzoLogo.png';
             }}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
