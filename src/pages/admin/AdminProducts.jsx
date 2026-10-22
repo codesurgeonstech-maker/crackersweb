@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -7,9 +7,11 @@ import {
   deleteProduct,
   toggleProductAvailability,
   updateProduct,
-  bulkImportProducts
+  bulkImportProducts,
+  addProduct
 } from '../../services/productService';
 import { getShopCategories, addCategory } from '../../services/categoryService';
+import { uploadImage } from '../../services/storageService';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { parseProductsCSV, getSampleProductsCSV } from '../../utils/csvParser';
 import Badge from '../../components/common/Badge';
@@ -35,7 +37,8 @@ import {
   AlertCircle,
   X,
   FileText,
-  RefreshCw
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 
 export default function AdminProducts() {
@@ -53,6 +56,26 @@ export default function AdminProducts() {
   const [editingPriceProd, setEditingPriceProd] = useState(null);
   const [newPrice, setNewPrice] = useState('');
   const [newOrigPrice, setNewOrigPrice] = useState('');
+
+  // Add / Edit Product Overlay Modal
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [productForm, setProductForm] = useState({
+    name: '',
+    categoryId: '',
+    price: '',
+    originalPrice: '',
+    description: '',
+    imageUrl: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=500&auto=format&fit=crop&q=80',
+    stockQuantity: 100,
+    displayOrder: 1,
+    isAvailable: true
+  });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [uploadingProductImg, setUploadingProductImg] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Bulk CSV Upload Modal
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
@@ -87,6 +110,99 @@ export default function AdminProducts() {
   useEffect(() => {
     loadData();
   }, [currentShopId]);
+
+  // Check URL query param for automatic overlay open (e.g. from dashboard or redirect)
+  useEffect(() => {
+    if (searchParams.get('new') === 'true' || searchParams.get('create') === 'true') {
+      handleOpenAddProduct();
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, categories]);
+
+  const handleOpenAddProduct = () => {
+    setEditingProduct(null);
+    setProductForm({
+      name: '',
+      categoryId: categories[0]?.id || '',
+      price: '',
+      originalPrice: '',
+      description: '',
+      imageUrl: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=500&auto=format&fit=crop&q=80',
+      stockQuantity: 100,
+      displayOrder: products.length + 1,
+      isAvailable: true
+    });
+    setImageFile(null);
+    setImagePreview('');
+    setProductModalOpen(true);
+  };
+
+  const handleOpenEditProduct = (prod) => {
+    setEditingProduct(prod);
+    setProductForm({
+      name: prod.name || '',
+      categoryId: prod.categoryId || (categories[0]?.id || ''),
+      price: prod.price !== undefined ? prod.price : '',
+      originalPrice: prod.originalPrice !== undefined && prod.originalPrice !== null ? prod.originalPrice : '',
+      description: prod.description || '',
+      imageUrl: prod.imageUrl || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=500&auto=format&fit=crop&q=80',
+      stockQuantity: prod.stockQuantity !== undefined ? prod.stockQuantity : 100,
+      displayOrder: prod.displayOrder || 1,
+      isAvailable: prod.isAvailable !== false
+    });
+    setImageFile(null);
+    setImagePreview(prod.imageUrl || '');
+    setProductModalOpen(true);
+  };
+
+  const handleSaveProduct = async (e) => {
+    e.preventDefault();
+    if (!productForm.name.trim() || !productForm.price || !productForm.categoryId) {
+      showToast('Please fill in product name, price, and category', 'error');
+      return;
+    }
+
+    setSavingProduct(true);
+    try {
+      let finalImageUrl = productForm.imageUrl;
+
+      if (imageFile) {
+        setUploadingProductImg(true);
+        finalImageUrl = await uploadImage(imageFile, currentShopId, 'products', productForm.name);
+        setUploadingProductImg(false);
+      }
+
+      const payload = {
+        name: productForm.name.trim(),
+        categoryId: productForm.categoryId,
+        price: Number(productForm.price),
+        originalPrice: productForm.originalPrice ? Number(productForm.originalPrice) : null,
+        description: productForm.description.trim(),
+        imageUrl: finalImageUrl,
+        stockQuantity: Number(productForm.stockQuantity) || 100,
+        displayOrder: Number(productForm.displayOrder) || 1,
+        isAvailable: Boolean(productForm.isAvailable)
+      };
+
+      if (editingProduct) {
+        await updateProduct(currentShopId, editingProduct.id, payload);
+        setProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, ...payload } : p));
+        showToast(`Product "${payload.name}" updated successfully!`, 'success');
+      } else {
+        const newProd = await addProduct(currentShopId, payload);
+        setProducts(prev => [newProd, ...prev]);
+        showToast(`Product "${payload.name}" added to catalogue!`, 'success');
+      }
+
+      setProductModalOpen(false);
+      setEditingProduct(null);
+    } catch (err) {
+      showToast(err.message || 'Failed to save product', 'error');
+    } finally {
+      setSavingProduct(false);
+      setUploadingProductImg(false);
+    }
+  };
 
   const categoryMap = useMemo(() => {
     return categories.reduce((acc, c) => {
@@ -356,11 +472,14 @@ export default function AdminProducts() {
             >
               Export CSV
             </Button>
-            <Link to="/admin/products/create">
-              <Button icon={Plus} size="sm" className="text-xs">
-                Add Product
-              </Button>
-            </Link>
+            <Button
+              icon={Plus}
+              size="sm"
+              onClick={handleOpenAddProduct}
+              className="text-xs"
+            >
+              Add Product
+            </Button>
           </div>
         </div>
 
@@ -439,7 +558,7 @@ export default function AdminProducts() {
                 </p>
               </div>
             ) : (
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-left text-sm min-w-[720px]">
                 <thead className="bg-surface-secondary text-gray-500 text-xs uppercase font-semibold">
                   <tr>
                     <th className="px-5 py-3">Product</th>
@@ -526,13 +645,13 @@ export default function AdminProducts() {
 
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          <Link
-                            to={`/admin/products/${prod.id}/edit`}
+                          <button
+                            onClick={() => handleOpenEditProduct(prod)}
                             className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                            title="Edit Full Details"
+                            title="Edit Product Details"
                           >
                             <Edit className="w-4 h-4" />
-                          </Link>
+                          </button>
                           <button
                             onClick={() => handleDelete(prod)}
                             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -549,6 +668,212 @@ export default function AdminProducts() {
             )}
           </div>
         </div>
+
+        {/* Add / Edit Product Overlay Popup Modal */}
+        {productModalOpen && (
+          <Modal
+            isOpen={productModalOpen}
+            onClose={() => {
+              if (!savingProduct && !uploadingProductImg) {
+                setProductModalOpen(false);
+                setEditingProduct(null);
+              }
+            }}
+            title={editingProduct ? `Edit Product: ${editingProduct.name}` : "Add New Cracker Product"}
+            maxWidth="max-w-2xl"
+          >
+            <form onSubmit={handleSaveProduct} className="space-y-4 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <Input
+                  label="Product Name"
+                  placeholder="e.g. 15 cm Deluxe Colour Sparklers"
+                  value={productForm.name}
+                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                  required
+                />
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-gray-700 tracking-wide">
+                    Category <span className="text-primary-500">*</span>
+                  </label>
+                  <select
+                    value={productForm.categoryId}
+                    onChange={(e) => setProductForm({ ...productForm, categoryId: e.target.value })}
+                    className="block w-full px-3.5 py-2.5 rounded-xl border border-surface-border bg-white text-surface-text text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                    required
+                  >
+                    {categories.length === 0 ? (
+                      <option value="">General</option>
+                    ) : (
+                      categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <Input
+                  label="Selling Price (₹)"
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="e.g. 180"
+                  value={productForm.price}
+                  onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                  required
+                />
+
+                <Input
+                  label="Original MRP / Strike Price (₹) (Optional)"
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="e.g. 350"
+                  value={productForm.originalPrice}
+                  onChange={(e) => setProductForm({ ...productForm, originalPrice: e.target.value })}
+                  helperText={
+                    productForm.originalPrice && Number(productForm.originalPrice) > Number(productForm.price || 0)
+                      ? `${Math.round(((Number(productForm.originalPrice) - Number(productForm.price)) / Number(productForm.originalPrice)) * 100)}% discount badge will be shown`
+                      : 'Shows strike price with discount badge'
+                  }
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-gray-700 tracking-wide">
+                  Product Description (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Provide effect details, pieces per pack, sound/light features..."
+                  value={productForm.description}
+                  onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                  className="block w-full p-3 rounded-xl border border-surface-border bg-white text-surface-text text-xs sm:text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                />
+              </div>
+
+              {/* Image Preview & Upload / URL */}
+              <div className="space-y-2 pt-1">
+                <label className="block text-xs font-semibold text-gray-700 tracking-wide">
+                  Product Photo
+                </label>
+                <div className="flex flex-col sm:flex-row items-center gap-3.5 p-3.5 border border-dashed border-gray-300 rounded-2xl bg-gray-50/60">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                    <img
+                      src={imagePreview || productForm.imageUrl || 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=200&auto=format&fit=crop&q=80'}
+                      alt="Product preview"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=200&auto=format&fit=crop&q=80';
+                      }}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <div className="space-y-2 flex-1 w-full">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 rounded-xl shadow-xs transition-colors">
+                        <Upload className="w-3.5 h-3.5 text-primary-500" />
+                        <span>Upload File</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (!file.type.startsWith('image/')) {
+                                showToast('Please select an image file', 'error');
+                                return;
+                              }
+                              setImageFile(file);
+                              setImagePreview(URL.createObjectURL(file));
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                      <span className="text-[11px] text-gray-400">or enter direct photo URL:</span>
+                    </div>
+
+                    <Input
+                      placeholder="https://images.unsplash.com/..."
+                      value={productForm.imageUrl}
+                      onChange={(e) => {
+                        setProductForm({ ...productForm, imageUrl: e.target.value });
+                        setImagePreview('');
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Stock, Display Order, and Availability */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
+                <Input
+                  label="Stock Quantity"
+                  type="number"
+                  min="0"
+                  value={productForm.stockQuantity}
+                  onChange={(e) => setProductForm({ ...productForm, stockQuantity: e.target.value })}
+                />
+
+                <Input
+                  label="Display Order"
+                  type="number"
+                  min="1"
+                  value={productForm.displayOrder}
+                  onChange={(e) => setProductForm({ ...productForm, displayOrder: e.target.value })}
+                />
+
+                <div className="space-y-1.5 flex flex-col justify-end">
+                  <label className="block text-xs font-semibold text-gray-700 tracking-wide">
+                    Availability
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setProductForm({ ...productForm, isAvailable: !productForm.isAvailable })}
+                    className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
+                      productForm.isAvailable
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
+                        : 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
+                    }`}
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    <span>{productForm.isAvailable ? 'In Stock' : 'Sold Out'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Actions Footer */}
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={savingProduct || uploadingProductImg}
+                  onClick={() => {
+                    setProductModalOpen(false);
+                    setEditingProduct(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  isLoading={savingProduct || uploadingProductImg}
+                  icon={Sparkles}
+                >
+                  {editingProduct ? 'Update Product' : 'Add Product'}
+                </Button>
+              </div>
+            </form>
+          </Modal>
+        )}
 
         {/* Quick Price Edit Modal */}
         {editingPriceProd && (

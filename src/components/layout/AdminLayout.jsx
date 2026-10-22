@@ -11,8 +11,7 @@ import {
   ExternalLink,
   Menu,
   X,
-  Store,
-  Plus
+  Store
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getShopById } from '../../services/shopService';
@@ -46,7 +45,6 @@ export default function AdminLayout({ children }) {
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Products Catalogue', path: '/admin/products', icon: Package },
-    { name: 'Add New Product', path: '/admin/products/create', icon: Plus },
     { name: 'Categories', path: '/admin/categories', icon: Layers },
     { name: 'Orders & Enquiries', path: '/admin/orders', icon: ShoppingBag },
     { name: 'QR Code & Posters', path: '/admin/qr-code', icon: QrCode },

@@ -292,7 +292,7 @@ export default function AdminCategories() {
                 </p>
               </div>
             ) : (
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-left text-sm min-w-[550px]">
                 <thead className="bg-surface-secondary text-gray-500 text-xs uppercase font-semibold">
                   <tr>
                     <th className="px-5 py-3">Order</th>

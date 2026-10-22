@@ -16,7 +16,6 @@ import ShopDetail from '../pages/developer/ShopDetail';
 import AdminLogin from '../pages/admin/AdminLogin';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminProducts from '../pages/admin/AdminProducts';
-import ProductCreate from '../pages/admin/ProductCreate';
 import ProductEdit from '../pages/admin/ProductEdit';
 import AdminCategories from '../pages/admin/AdminCategories';
 import AdminOrders from '../pages/admin/AdminOrders';
@@ -94,11 +93,7 @@ export default function AppRoutes() {
       />
       <Route
         path="/admin/products/create"
-        element={
-          <ProtectedRoute requiredRole="owner">
-            <ProductCreate />
-          </ProtectedRoute>
-        }
+        element={<Navigate to="/admin/products?new=true" replace />}
       />
       <Route
         path="/admin/products/:productId/edit"

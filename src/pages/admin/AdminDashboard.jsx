@@ -108,7 +108,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Link to="/admin/products/create" className="flex-1 sm:flex-none">
+            <Link to="/admin/products?new=true" className="flex-1 sm:flex-none">
               <Button icon={Plus} size="sm" className="w-full">
                 Add Product
               </Button>
@@ -122,13 +122,15 @@ export default function AdminDashboard() {
         </div>
 
         {/* Metrics Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
           {statCards.map((card, idx) => {
             const Icon = card.icon;
             return (
               <div
                 key={idx}
-                className="bg-white p-4 rounded-2xl border border-surface-border shadow-subtle flex flex-col justify-between"
+                className={`bg-white p-4 rounded-2xl border border-surface-border shadow-subtle flex flex-col justify-between ${
+                  idx === 4 ? 'col-span-2 sm:col-span-1 lg:col-span-1' : ''
+                }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-gray-500">
@@ -175,7 +177,7 @@ export default function AdminDashboard() {
                     No orders recorded yet. Share your shop QR code to start receiving orders!
                   </div>
                 ) : (
-                  <table className="w-full text-left text-sm">
+                  <table className="w-full text-left text-sm min-w-[640px]">
                     <thead className="bg-surface-secondary text-gray-500 text-xs uppercase font-semibold">
                       <tr>
                         <th className="px-5 py-3">Order Ref</th>

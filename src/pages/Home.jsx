@@ -58,15 +58,16 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <Link to="/admin/login">
-              <Button variant="outline" size="sm">
-                Shop Owner Login
+              <Button variant="outline" size="sm" className="text-xs px-2.5 sm:px-3">
+                <span className="hidden xs:inline sm:inline">Shop </span>Owner
               </Button>
             </Link>
             <Link to="/developer/login">
-              <Button size="sm" icon={Lock}>
-                Developer Hub
+              <Button size="sm" icon={Lock} className="text-xs px-2.5 sm:px-3">
+                <span className="hidden sm:inline">Developer Hub</span>
+                <span className="sm:hidden">Dev</span>
               </Button>
             </Link>
           </div>

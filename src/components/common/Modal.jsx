@@ -42,30 +42,30 @@ export default function Modal({
           />
 
           {/* Modal Container */}
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
+          <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
               className={cn(
-                "relative w-full rounded-2xl bg-white p-6 text-left shadow-modal border border-surface-border transition-all",
+                "relative w-full rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-6 text-left shadow-modal border border-surface-border transition-all my-auto max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-4rem)] flex flex-col",
                 maxWidth
               )}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               {(title || showClose) && (
-                <div className="flex items-center justify-between pb-4 border-b border-surface-border mb-4">
+                <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-surface-border mb-3 sm:mb-4 shrink-0">
                   {title && (
-                    <h3 className="text-lg font-bold text-surface-text tracking-tight">
+                    <h3 className="text-base sm:text-lg font-bold text-surface-text tracking-tight pr-4">
                       {title}
                     </h3>
                   )}
                   {showClose && (
                     <button
                       onClick={onClose}
-                      className="rounded-lg p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors ml-auto"
+                      className="rounded-xl p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors ml-auto"
                       aria-label="Close dialog"
                     >
                       <X className="h-5 w-5" />
@@ -75,7 +75,7 @@ export default function Modal({
               )}
 
               {/* Body */}
-              <div>{children}</div>
+              <div className="overflow-y-auto flex-1 pr-1.5 -mr-1.5">{children}</div>
             </motion.div>
           </div>
         </div>

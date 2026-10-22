@@ -386,7 +386,7 @@ export default function AdminOrders() {
                 )}
               </div>
             ) : (
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-left text-sm min-w-[850px]">
                 <thead className="bg-surface-secondary text-gray-500 text-xs uppercase font-semibold">
                   <tr>
                     <th className="px-5 py-3">Order Ref</th>
