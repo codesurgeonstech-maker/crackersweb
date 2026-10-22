@@ -86,11 +86,13 @@ export default function CheckoutPage() {
     try {
       const targetShopId = shop.id || shop.shopId;
 
+      const cleanCustomerMobile = formData.customerMobile.trim().replace(/^\+/, '');
+
       // 1. Create order in Firestore / database (performs server/trusted price validation)
       const orderResult = await createOrder({
         shopId: targetShopId,
         customerName: formData.customerName.trim(),
-        customerMobile: formData.customerMobile.trim(),
+        customerMobile: cleanCustomerMobile,
         orderType: formData.orderType,
         address: formData.address.trim(),
         notes: formData.notes.trim(),
@@ -102,7 +104,7 @@ export default function CheckoutPage() {
         shopName: shop.name,
         orderReference: orderResult.orderReference,
         customerName: formData.customerName.trim(),
-        customerMobile: formData.customerMobile.trim(),
+        customerMobile: cleanCustomerMobile,
         orderType: formData.orderType,
         address: formData.address.trim(),
         notes: formData.notes.trim(),
@@ -172,7 +174,7 @@ export default function CheckoutPage() {
                 placeholder="10-digit mobile (e.g. 9876543210)"
                 icon={Phone}
                 value={formData.customerMobile}
-                onChange={(e) => setFormData({ ...formData, customerMobile: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, customerMobile: e.target.value.replace(/^\+/, '') })}
                 required
                 helperText="Used for order confirmation and status updates"
               />

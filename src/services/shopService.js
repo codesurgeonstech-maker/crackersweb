@@ -23,7 +23,11 @@ function getLocalShops() {
     return [];
   }
   try {
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed.map(shop => ({
+      ...shop,
+      whatsappNumber: shop.whatsappNumber ? String(shop.whatsappNumber).replace(/\D/g, '') : ''
+    })) : [];
   } catch (e) {
     return [];
   }
@@ -200,13 +204,14 @@ export async function createShop(shopData) {
 export async function updateShop(shopId, updates) {
   const cleanUpdates = {
     ...updates,
+    ...(updates.whatsappNumber !== undefined ? { whatsappNumber: String(updates.whatsappNumber).replace(/\D/g, '') } : {}),
     updatedAt: new Date().toISOString()
   };
 
   if (isFirebaseConfigured && db) {
     const shopRef = doc(db, "shops", shopId);
     await updateDoc(shopRef, {
-      ...updates,
+      ...cleanUpdates,
       updatedAt: serverTimestamp()
     });
   }

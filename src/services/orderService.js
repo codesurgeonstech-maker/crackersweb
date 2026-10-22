@@ -23,7 +23,11 @@ function getLocalOrders(shopId) {
     return [];
   }
   try {
-    return JSON.parse(data);
+    const list = JSON.parse(data);
+    return Array.isArray(list) ? list.map(o => ({
+      ...o,
+      customerMobile: o.customerMobile ? String(o.customerMobile).replace(/^\+/, '') : ''
+    })) : [];
   } catch {
     return [];
   }
@@ -44,7 +48,14 @@ export async function getShopOrders(shopId) {
     const ordersRef = collection(db, "shops", shopId, "orders");
     const q = query(ordersRef, orderBy("createdAt", "desc"));
     const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        customerMobile: data.customerMobile ? String(data.customerMobile).replace(/^\+/, '') : ''
+      };
+    });
   }
 
   return getLocalOrders(shopId);
@@ -117,7 +128,7 @@ export async function createOrder(orderPayload) {
     orderReference,
     shopId,
     customerName: customerName.trim(),
-    customerMobile: customerMobile.trim(),
+    customerMobile: customerMobile.trim().replace(/^\+/, ''),
     orderType: orderType || 'Shop Pickup',
     address: address ? address.trim() : '',
     notes: notes ? notes.trim() : '',

@@ -55,7 +55,7 @@ export default function AdminSettings() {
           setShop(data);
           setFormData({
             name: data.name || '',
-            whatsappNumber: data.whatsappNumber || '',
+            whatsappNumber: (data.whatsappNumber || '').replace(/^\+/, ''),
             address: data.address || '',
             logoUrl: data.logoUrl || '',
             welcomeMessage: data.welcomeMessage || '',
@@ -162,11 +162,11 @@ export default function AdminSettings() {
               />
 
               <Input
-                label="WhatsApp Number (with country code)"
+                label="WhatsApp Number (Numbers Alone, e.g. 919876543210)"
                 placeholder="919876543210"
                 icon={Phone}
                 value={formData.whatsappNumber}
-                onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value.replace(/^\+/, '') })}
                 required
               />
             </div>

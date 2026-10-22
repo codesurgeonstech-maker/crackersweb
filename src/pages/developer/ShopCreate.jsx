@@ -132,13 +132,13 @@ export default function ShopCreate() {
             </div>
 
             <Input
-              label="WhatsApp Order Number (with Country Code)"
+              label="WhatsApp Order Number"
               placeholder="e.g. 919876543210"
               icon={Phone}
               value={formData.whatsappNumber}
-              onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value.replace(/^\+/, '') })}
               required
-              helperText="Orders will be sent to this WhatsApp number."
+              helperText="Orders will be sent to this WhatsApp number (numbers alone, no '+' prefix)."
             />
 
             {/* Shop Logo Upload from Local Device */}

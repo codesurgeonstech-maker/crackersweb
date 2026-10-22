@@ -196,7 +196,7 @@ export default function AdminDashboard() {
                           </td>
                           <td className="px-5 py-3.5">
                             <p className="font-semibold text-xs text-surface-text">{order.customerName}</p>
-                            <p className="text-[11px] text-gray-400">{order.customerMobile}</p>
+                            <p className="text-[11px] text-gray-400">{String(order.customerMobile || '').replace(/^\+/, '')}</p>
                           </td>
                           <td className="px-5 py-3.5 text-xs text-gray-500">
                             {order.orderType || 'Pickup'}

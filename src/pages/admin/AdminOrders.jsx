@@ -423,7 +423,7 @@ export default function AdminOrders() {
                             title="Call customer"
                           >
                             <Phone className="w-3 h-3" />
-                            <span>{order.customerMobile}</span>
+                            <span>{String(order.customerMobile || '').replace(/^\+/, '')}</span>
                           </a>
                         </td>
 
@@ -508,7 +508,7 @@ export default function AdminOrders() {
                     className="font-mono font-bold text-primary-600 hover:underline inline-flex items-center gap-1"
                   >
                     <Phone className="w-3 h-3" />
-                    <span>{selectedOrder.customerMobile}</span>
+                    <span>{String(selectedOrder.customerMobile || '').replace(/^\+/, '')}</span>
                   </a>
                 </div>
                 <div>

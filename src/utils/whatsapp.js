@@ -25,13 +25,14 @@ export function buildWhatsAppOrderMessage({
   address,
   notes
 }) {
+  const cleanMobile = customerMobile ? String(customerMobile).replace(/^\+/, '').trim() : '';
   const lines = [
     `Hello ${shopName}!`,
     `I would like to place an order.`,
     ``,
     `Order Reference: ${orderReference}`,
     `Customer Name: ${customerName}`,
-    `Mobile: ${customerMobile}`,
+    `Mobile: ${cleanMobile}`,
     ``,
     `Items:`
   ];

@@ -182,7 +182,7 @@ export default function ShopManagement() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">WhatsApp:</span>
-                      <span className="font-mono font-medium text-gray-700">+{shop.whatsappNumber}</span>
+                      <span className="font-mono font-medium text-gray-700">{String(shop.whatsappNumber || '').replace(/^\+/, '')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Address:</span>

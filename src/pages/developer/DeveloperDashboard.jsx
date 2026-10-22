@@ -174,7 +174,7 @@ export default function DeveloperDashboard() {
                       <p className="text-[11px] text-gray-400">{shop.ownerEmail || 'owner@crackers.com'}</p>
                     </td>
                     <td className="px-5 py-3.5 text-xs font-medium text-gray-600">
-                      +{shop.whatsappNumber}
+                      {String(shop.whatsappNumber || '').replace(/^\+/, '')}
                     </td>
                     <td className="px-5 py-3.5">
                       <Badge variant={shop.isActive ? 'success' : 'danger'}>

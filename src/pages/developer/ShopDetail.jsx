@@ -264,7 +264,7 @@ export default function ShopDetail() {
               <span className="text-xs text-gray-400 font-medium">WhatsApp</span>
               <Phone className="w-4 h-4 text-[#25D366]" />
             </div>
-            <p className="text-sm font-bold font-mono text-surface-text">+{shop.whatsappNumber}</p>
+            <p className="text-sm font-bold font-mono text-surface-text">{String(shop.whatsappNumber || '').replace(/^\+/, '')}</p>
             <p className="text-[11px] text-emerald-600 font-medium">Active for orders</p>
           </div>
         </div>
@@ -287,8 +287,9 @@ export default function ShopDetail() {
 
               <Input
                 label="WhatsApp Order Number"
+                placeholder="e.g. 919876543210"
                 value={formData.whatsappNumber}
-                onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value.replace(/^\+/, '') })}
                 required
               />
             </div>

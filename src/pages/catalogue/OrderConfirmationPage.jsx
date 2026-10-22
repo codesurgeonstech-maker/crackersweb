@@ -131,7 +131,7 @@ export default function OrderConfirmationPage() {
               Open in WhatsApp & Press Send
             </Button>
             <p className="text-[11px] text-emerald-800">
-              Shop WhatsApp: <span className="font-mono font-bold">+{shop?.whatsappNumber}</span>
+              Shop WhatsApp: <span className="font-mono font-bold">{String(shop?.whatsappNumber || '').replace(/^\+/, '')}</span>
             </p>
           </div>
 
@@ -165,7 +165,7 @@ export default function OrderConfirmationPage() {
                 </div>
                 <div>
                   <span className="text-gray-400 block">Mobile:</span>
-                  <span className="font-mono font-bold text-gray-800">{order.customerMobile}</span>
+                  <span className="font-mono font-bold text-gray-800">{String(order.customerMobile || '').replace(/^\+/, '')}</span>
                 </div>
                 <div>
                   <span className="text-gray-400 block">Preference:</span>

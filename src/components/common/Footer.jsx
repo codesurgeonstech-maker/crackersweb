@@ -41,7 +41,7 @@ export default function Footer({ shopName, whatsappNumber }) {
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
               >
-                Chat on WhatsApp: +{whatsappNumber}
+                Chat on WhatsApp: {String(whatsappNumber).replace(/^\+/, '')}
               </a>
             )}
           </div>

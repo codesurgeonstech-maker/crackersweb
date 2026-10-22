@@ -77,7 +77,7 @@ async function handleCreateSecureOrder(data, context) {
     orderReference,
     shopId,
     customerName: customerName.trim(),
-    customerMobile: customerMobile.trim(),
+    customerMobile: customerMobile.trim().replace(/^\+/, ''),
     orderType: orderType || 'Shop Pickup',
     address: address ? address.trim() : '',
     notes: notes ? notes.trim() : '',
